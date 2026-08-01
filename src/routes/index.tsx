@@ -1,24 +1,191 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarGrid } from "@/components/turnos/CalendarGrid";
+import { TurnoDialog } from "@/components/turnos/TurnoDialog";
+import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
+import { MESES, loadTurnos, saveTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Agenda de Turnos | Calendario mensual" },
+      {
+        name: "description",
+        content:
+          "Agenda mensual de turnos: cargá pacientes por día, diferenciá Particular y Obra Social y descargá el calendario en PDF.",
+      },
+      { property: "og:title", content: "Agenda de Turnos | Calendario mensual" },
+      {
+        property: "og:description",
+        content: "Cargá turnos desde el celular y exportá el mes completo en PDF A4 apaisado.",
+      },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [turnos, setTurnos] = useState<Turno[]>([]);
+  const [formFecha, setFormFecha] = useState<string | null>(null);
+  const [detalleFecha, setDetalleFecha] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setTurnos(loadTurnos()), []);
+
+  const update = (next: Turno[]) => {
+    setTurnos(next);
+    saveTurnos(next);
+  };
+
+  const turnosPorDia = useMemo(() => {
+    const map: Record<string, Turno[]> = {};
+    for (const t of turnos) {
+      (map[t.fecha] ??= []).push(t);
+    }
+    for (const key of Object.keys(map)) {
+      map[key]?.sort((a, b) => a.hora.localeCompare(b.hora));
+    }
+    return map;
+  }, [turnos]);
+
+  const shiftMonth = (delta: number) => {
+    const d = new Date(year, month + delta, 1);
+    setYear(d.getFullYear());
+    setMonth(d.getMonth());
+  };
+
+  const handleSave = (data: { hora: string; nombre: string; tipo: TipoConsulta }) => {
+    if (!formFecha) return;
+    update([
+      ...turnos,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        fecha: formFecha,
+        ...data,
+      },
+    ]);
+    setFormFecha(null);
+  };
+
+  const handleExport = async () => {
+    if (!gridRef.current) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas-pro"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(gridRef.current, { scale: 2, backgroundColor: "#ffffff" });
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pw = pdf.internal.pageSize.getWidth();
+      const ph = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const ratio = Math.min(
+        (pw - margin * 2) / canvas.width,
+        (ph - margin * 2) / canvas.height,
+      );
+      const w = canvas.width * ratio;
+      const h = canvas.height * ratio;
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", (pw - w) / 2, margin, w, h);
+      pdf.save(`turnos-${MESES[month]?.toLowerCase()}-${year}.pdf`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
+    <main className="min-h-screen bg-background px-3 py-4 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-5xl space-y-4">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-bold tracking-tight sm:text-2xl">
+              Agenda de Turnos
+            </h1>
+            <p className="truncate text-xs text-muted-foreground sm:text-sm">
+              Tocá un día para cargar un turno
+            </p>
+          </div>
+          <Button
+            onClick={handleExport}
+            disabled={exporting}
+            size="sm"
+            className="shrink-0 gap-1.5"
+          >
+            <Download className="size-4" />
+            {exporting ? "Generando..." : "Descargar PDF"}
+          </Button>
+        </header>
+
+        <div ref={gridRef} className="space-y-0 rounded-lg bg-card">
+          <div className="flex items-center justify-between rounded-t-lg bg-primary px-3 py-2.5 text-primary-foreground">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes anterior"
+              onClick={() => shiftMonth(-1)}
+              className="size-8 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+            >
+              <ChevronLeft className="size-5" />
+            </Button>
+            <h2 className="truncate text-sm font-bold tracking-wide uppercase sm:text-base">
+              {MESES[month]} {year}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes siguiente"
+              onClick={() => shiftMonth(1)}
+              className="size-8 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+            >
+              <ChevronRight className="size-5" />
+            </Button>
+          </div>
+
+          <CalendarGrid
+            year={year}
+            month={month}
+            turnosPorDia={turnosPorDia}
+            onDayClick={(key) => setFormFecha(key)}
+            onMoreClick={(key) => setDetalleFecha(key)}
+          />
+        </div>
+
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
+              P
+            </span>
+            Particular
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="rounded bg-obra-social px-1.5 py-0.5 font-bold text-obra-social-foreground">
+              O.S
+            </span>
+            Obra Social
+          </span>
+        </div>
+      </div>
+
+      <TurnoDialog fecha={formFecha} onClose={() => setFormFecha(null)} onSave={handleSave} />
+      <DayDetailDialog
+        fecha={detalleFecha}
+        turnos={detalleTurnos}
+        onClose={() => setDetalleFecha(null)}
+        onDelete={(id) => update(turnos.filter((t) => t.id !== id))}
+        onAdd={() => {
+          const f = detalleFecha;
+          setDetalleFecha(null);
+          setFormFecha(f);
+        }}
       />
-    </div>
+    </main>
   );
 }
