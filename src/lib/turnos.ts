@@ -49,7 +49,10 @@ export function toKey(d: Date) {
 }
 
 export function formatFechaLarga(key: string) {
-  const [y, m, d] = key.split("-").map(Number);
+  const parts = key.split("-").map(Number);
+  const y = parts[0] ?? 0;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
   const date = new Date(y, m - 1, d);
   return `${DIAS[date.getDay()]} ${d} de ${MESES[m - 1]} ${y}`;
 }
