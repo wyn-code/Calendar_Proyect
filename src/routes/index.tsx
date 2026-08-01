@@ -82,17 +82,43 @@ function Index() {
         import("jspdf"),
       ]);
       const canvas = await html2canvas(gridRef.current, { scale: 2, backgroundColor: "#ffffff" });
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pw = pdf.internal.pageSize.getWidth();
       const ph = pdf.internal.pageSize.getHeight();
       const margin = 8;
-      const ratio = Math.min(
-        (pw - margin * 2) / canvas.width,
-        (ph - margin * 2) / canvas.height,
-      );
-      const w = canvas.width * ratio;
-      const h = canvas.height * ratio;
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", (pw - w) / 2, margin, w, h);
+      const contentW = pw - margin * 2;
+      const contentH = ph - margin * 2;
+      // Escala para que el ancho completo entre en A4 vertical.
+      const scale = contentW / canvas.width;
+      const totalH = canvas.height * scale;
+      // Alto de canvas (px) que entra en una página.
+      const pageCanvasH = Math.floor(contentH / scale);
+
+      let offset = 0;
+      let page = 0;
+      while (offset < canvas.height) {
+        const sliceH = Math.min(pageCanvasH, canvas.height - offset);
+        const slice = document.createElement("canvas");
+        slice.width = canvas.width;
+        slice.height = sliceH;
+        const ctx = slice.getContext("2d");
+        if (!ctx) break;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, slice.width, slice.height);
+        ctx.drawImage(canvas, 0, offset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        if (page > 0) pdf.addPage();
+        pdf.addImage(
+          slice.toDataURL("image/png"),
+          "PNG",
+          margin,
+          margin,
+          contentW,
+          sliceH * scale,
+        );
+        offset += sliceH;
+        page += 1;
+      }
+      if (totalH <= 0) return;
       pdf.save(`turnos-${MESES[month]?.toLowerCase()}-${year}.pdf`);
     } finally {
       setExporting(false);
@@ -154,7 +180,7 @@ function Index() {
             month={month}
             turnosPorDia={turnosPorDia}
             onDayClick={(key) => setFormFecha(key)}
-            onMoreClick={(key) => setDetalleFecha(key)}
+            onTurnosClick={(key: string) => setDetalleFecha(key)}
           />
         </div>
 

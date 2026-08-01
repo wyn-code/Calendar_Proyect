@@ -7,15 +7,15 @@ interface Props {
   month: number;
   turnosPorDia: Record<string, Turno[]>;
   onDayClick: (key: string) => void;
-  onMoreClick: (key: string) => void;
+  onTurnosClick: (key: string) => void;
 }
 
-export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onMoreClick }: Props) {
+export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onTurnosClick }: Props) {
   const weeks = buildMonthGrid(year, month);
   const todayKey = toKey(new Date());
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="overflow-hidden rounded-b-lg border border-border bg-card">
       <div className="grid grid-cols-7 border-b border-border bg-muted">
         {DIAS.map((d) => (
           <div
@@ -32,22 +32,24 @@ export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onMoreClic
           const key = toKey(date);
           const inMonth = date.getMonth() === month;
           const turnos = turnosPorDia[key] ?? [];
-          const visibles = turnos.slice(0, 2);
-          const restantes = turnos.length - visibles.length;
 
           return (
-            <button
-              type="button"
+            <div
               key={key}
+              role="button"
+              tabIndex={0}
               onClick={() => onDayClick(key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") onDayClick(key);
+              }}
               className={cn(
-                "flex min-h-[76px] flex-col items-stretch border-t border-r border-border p-1 text-left transition-colors hover:bg-accent/60 sm:min-h-[110px] sm:p-1.5 [&:nth-child(7n)]:border-r-0",
+                "flex min-h-[58px] cursor-pointer flex-col items-stretch border-t border-r border-border p-1 text-left transition-colors hover:bg-accent/60 sm:min-h-[84px] sm:p-1.5 [&:nth-child(7n)]:border-r-0",
                 !inMonth && "bg-muted/40",
               )}
             >
               <span
                 className={cn(
-                  "mb-1 self-start rounded px-1 text-[11px] font-semibold tabular-nums sm:text-xs",
+                  "mb-0.5 self-start rounded px-1 text-[11px] font-semibold tabular-nums sm:text-xs",
                   !inMonth && "text-muted-foreground/50",
                   key === todayKey && "bg-primary text-primary-foreground",
                 )}
@@ -55,25 +57,20 @@ export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onMoreClic
                 {date.getDate()}
               </span>
 
-              <div className="min-w-0 space-y-0.5">
-                {visibles.map((t) => (
-                  <TurnoLine key={t.id} turno={t} />
-                ))}
-                {restantes > 0 && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoreClick(key);
-                    }}
-                    className="block text-[10px] font-semibold text-primary underline-offset-2 hover:underline"
-                  >
-                    +{restantes} más
-                  </span>
-                )}
-              </div>
-            </button>
+              {turnos.length > 0 && (
+                <div
+                  className="min-w-0 space-y-px"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTurnosClick(key);
+                  }}
+                >
+                  {turnos.map((t) => (
+                    <TurnoLine key={t.id} turno={t} />
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
