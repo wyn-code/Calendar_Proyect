@@ -180,7 +180,7 @@ function Index() {
             month={month}
             turnosPorDia={turnosPorDia}
             onDayClick={(key) => setFormFecha(key)}
-            onMoreClick={(key) => setDetalleFecha(key)}
+            onTurnosClick={(key: string) => setDetalleFecha(key)}
           />
         </div>
 
