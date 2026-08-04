@@ -134,7 +134,7 @@ function Index() {
       style={{ backgroundImage: `url(${fondoFloral})` }}
     >
       <div className="mx-auto w-full max-w-5xl space-y-4">
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card/85 px-3 py-2.5 shadow-sm backdrop-blur-sm sm:flex sm:justify-between sm:px-4">
 
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold tracking-tight sm:text-2xl">
