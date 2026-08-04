@@ -6,6 +6,7 @@ import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { MESES, loadTurnos, saveTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
+import fondoFloral from "@/assets/fondo-floral.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
