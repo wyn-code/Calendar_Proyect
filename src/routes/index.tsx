@@ -189,7 +189,7 @@ function Index() {
           />
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex w-fit items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
           <span className="flex items-center gap-1.5">
             <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
               P
