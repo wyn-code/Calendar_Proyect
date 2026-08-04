@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, LogOut, User } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
@@ -126,13 +133,21 @@ function Index() {
     }
   };
 
+  const handleLogout = () => {
+    toast("Sesión cerrada", {
+      description: "Todavía no hay cuentas configuradas en la app.",
+    });
+  };
+
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
 
   return (
-    <main
-      className="min-h-screen bg-background bg-cover bg-fixed bg-center bg-no-repeat px-3 py-4 sm:px-6 sm:py-8"
-      style={{ backgroundImage: `url(${fondoFloral})` }}
-    >
+    <main className="relative min-h-screen bg-background px-3 py-4 sm:px-6 sm:py-8">
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${fondoFloral})` }}
+      />
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card/85 px-3 py-2.5 shadow-sm backdrop-blur-sm sm:flex sm:justify-between sm:px-4">
 
@@ -189,19 +204,40 @@ function Index() {
           />
         </div>
 
-        <div className="flex w-fit items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
-          <span className="flex items-center gap-1.5">
-            <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
-              P
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-fit items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+            <span className="flex items-center gap-1.5">
+              <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
+                P
+              </span>
+              Particular
             </span>
-            Particular
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="rounded bg-obra-social px-1.5 py-0.5 font-bold text-obra-social-foreground">
-              O.S
+            <span className="flex items-center gap-1.5">
+              <span className="rounded bg-obra-social px-1.5 py-0.5 font-bold text-obra-social-foreground">
+                O.S
+              </span>
+              Obra Social
             </span>
-            Obra Social
-          </span>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Menú de usuario"
+                className="size-9 rounded-full bg-card/85 backdrop-blur-sm"
+              >
+                <User className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onSelect={handleLogout}>
+                <LogOut className="size-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
