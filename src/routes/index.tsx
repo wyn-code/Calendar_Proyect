@@ -191,19 +191,40 @@ function Index() {
           />
         </div>
 
-        <div className="flex w-fit items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
-          <span className="flex items-center gap-1.5">
-            <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
-              P
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-fit items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+            <span className="flex items-center gap-1.5">
+              <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
+                P
+              </span>
+              Particular
             </span>
-            Particular
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="rounded bg-obra-social px-1.5 py-0.5 font-bold text-obra-social-foreground">
-              O.S
+            <span className="flex items-center gap-1.5">
+              <span className="rounded bg-obra-social px-1.5 py-0.5 font-bold text-obra-social-foreground">
+                O.S
+              </span>
+              Obra Social
             </span>
-            Obra Social
-          </span>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Menú de usuario"
+                className="size-9 rounded-full bg-card/85 backdrop-blur-sm"
+              >
+                <User className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onSelect={handleLogout}>
+                <LogOut className="size-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
