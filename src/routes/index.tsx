@@ -133,6 +133,12 @@ function Index() {
     }
   };
 
+  const handleLogout = () => {
+    toast("Sesión cerrada", {
+      description: "Todavía no hay cuentas configuradas en la app.",
+    });
+  };
+
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
 
   return (
