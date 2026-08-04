@@ -128,9 +128,13 @@ function Index() {
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
 
   return (
-    <main className="min-h-screen bg-background px-3 py-4 sm:px-6 sm:py-8">
+    <main
+      className="min-h-screen bg-background bg-cover bg-fixed bg-center bg-no-repeat px-3 py-4 sm:px-6 sm:py-8"
+      style={{ backgroundImage: `url(${fondoFloral})` }}
+    >
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
+
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold tracking-tight sm:text-2xl">
               Agenda de Turnos
