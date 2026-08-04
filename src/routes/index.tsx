@@ -6,6 +6,7 @@ import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { MESES, loadTurnos, saveTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
+import fondoFloral from "@/assets/fondo-floral.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -128,9 +129,13 @@ function Index() {
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
 
   return (
-    <main className="min-h-screen bg-background px-3 py-4 sm:px-6 sm:py-8">
+    <main
+      className="min-h-screen bg-background bg-cover bg-fixed bg-center bg-no-repeat px-3 py-4 sm:px-6 sm:py-8"
+      style={{ backgroundImage: `url(${fondoFloral})` }}
+    >
       <div className="mx-auto w-full max-w-5xl space-y-4">
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card/85 px-3 py-2.5 shadow-sm backdrop-blur-sm sm:flex sm:justify-between sm:px-4">
+
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold tracking-tight sm:text-2xl">
               Agenda de Turnos
@@ -184,7 +189,7 @@ function Index() {
           />
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex w-fit items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
           <span className="flex items-center gap-1.5">
             <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
               P
