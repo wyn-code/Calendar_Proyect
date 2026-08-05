@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_V1_PREFIX } from "./config";
+import { API_V1_PREFIX, getApiBaseUrl } from "./config";
 
 export interface ObraSocial {
   id: number;
@@ -39,9 +39,25 @@ export interface AppointmentCreate {
   observaciones: string | null;
 }
 
+function authToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem("turnos-sesion");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { token?: unknown };
+    return typeof parsed?.token === "string" ? parsed.token : null;
+  } catch {
+    return null;
+  }
+}
+
 async function request<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${API_V1_PREFIX}${path}`, {
-    headers: { "Content-Type": "application/json" },
+  const token = authToken();
+  const response = await fetch(`${getApiBaseUrl()}${API_V1_PREFIX}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...init,
   });
 

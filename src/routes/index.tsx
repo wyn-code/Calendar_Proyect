@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { UserMenu } from "@/components/turnos/UserMenu";
+import { LoginModal } from "@/components/auth/LoginModal";
+import { getSession } from "@/lib/auth";
 import {
   useAppointments,
   useCreateAppointment,
@@ -45,7 +47,17 @@ function Index() {
   const [detalleFecha, setDetalleFecha] = useState<string | null>(null);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !getSession()) setLoginOpen(true);
+  }, [mounted]);
 
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
@@ -312,6 +324,7 @@ function Index() {
           setFormFecha(f);
         }}
       />
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} blockDismiss />
     </main>
   );
 }

@@ -12,4 +12,13 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    server: {
+      // Proxy local dev API calls to the FastAPI backend on the same origin,
+      // avoiding CORS from the Vite dev server (default port 5173).
+      proxy: {
+        "/api": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      },
+    },
+  },
 });
