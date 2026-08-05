@@ -137,7 +137,7 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
           </div>
 
           {esObraSocial && (
-            <div className="animate-fade-in space-y-1.5">
+            <div className="animate-in fade-in slide-in-from-top-1 space-y-1.5 duration-300">
               <Label>Obra social</Label>
               <ObraSocialCombobox value={obraSocial} onChange={setObraSocial} />
             </div>

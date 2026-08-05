@@ -32,8 +32,14 @@ export function TurnoLine({ turno, size = "sm" }: { turno: Turno; size?: "sm" | 
   return (
     <div className="flex items-center gap-2 text-sm leading-tight">
       <span className="font-semibold tabular-nums">{turno.hora}</span>
-      <span className="break-words">{turno.nombre}</span>
+      <span className="break-words">
+        {turno.nombre}
+        {turno.obraSocial ? (
+          <span className="text-muted-foreground"> · {turno.obraSocial}</span>
+        ) : null}
+      </span>
       <span className="ml-auto">{chip}</span>
     </div>
   );
 }
+
