@@ -142,7 +142,9 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
                 nombre: nombre.trim(),
                 tipo,
                 ...(esObraSocial ? { obraSocial } : {}),
+                ...(observacion.trim() ? { observacion: observacion.trim() } : {}),
               });
+
               reset();
             }}
           >
