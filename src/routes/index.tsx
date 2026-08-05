@@ -207,7 +207,9 @@ function Index() {
             </span>
             Obra Social
           </span>
+          <UserMenu />
         </div>
+
       </div>
 
       <TurnoDialog fecha={formFecha} onClose={() => setFormFecha(null)} onSave={handleSave} />
