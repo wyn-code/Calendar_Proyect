@@ -83,6 +83,16 @@ function Index() {
     return map;
   }, [turnos]);
 
+  const turnosPorDiaVisibles = useMemo(() => {
+    if (!exporting) return turnosPorDia;
+    const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+    const map: Record<string, Turno[]> = {};
+    for (const [key, list] of Object.entries(turnosPorDia)) {
+      if (key.startsWith(prefix)) map[key] = list;
+    }
+    return map;
+  }, [turnosPorDia, exporting, year, month]);
+
   const shiftMonth = (delta: number) => {
     const d = new Date(year, month + delta, 1);
     setYear(d.getFullYear());
@@ -165,6 +175,9 @@ function Index() {
     if (!gridRef.current) return;
     setExporting(true);
     try {
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)));
+      });
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import("html2canvas-pro"),
         import("jspdf"),
@@ -273,7 +286,7 @@ function Index() {
           <CalendarGrid
             year={year}
             month={month}
-            turnosPorDia={turnosPorDia}
+            turnosPorDia={turnosPorDiaVisibles}
             onDayClick={(key) => setFormFecha(key)}
             onTurnosClick={(key: string) => setDetalleFecha(key)}
           />
