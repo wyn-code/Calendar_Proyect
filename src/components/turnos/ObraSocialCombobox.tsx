@@ -16,9 +16,10 @@ import { OBRAS_SOCIALES } from "@/lib/turnos";
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  options?: string[];
 }
 
-export function ObraSocialCombobox({ value, onChange }: Props) {
+export function ObraSocialCombobox({ value, onChange, options = OBRAS_SOCIALES }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -40,7 +41,7 @@ export function ObraSocialCombobox({ value, onChange }: Props) {
           <CommandList>
             <CommandEmpty>Sin resultados.</CommandEmpty>
             <CommandGroup>
-              {OBRAS_SOCIALES.map((os) => (
+              {options.map((os) => (
                 <CommandItem
                   key={os}
                   value={os}

@@ -45,5 +45,3 @@ export function TurnoLine({ turno, size = "sm" }: { turno: Turno; size?: "sm" | 
     </div>
   );
 }
-
-

@@ -1,3 +1,5 @@
+import type { Appointment, ObraSocial, Patient } from "./api";
+
 export type TipoConsulta = "particular" | "obra_social";
 
 export const OBRAS_SOCIALES = [
@@ -15,32 +17,38 @@ export const OBRAS_SOCIALES = [
 ];
 
 export interface Turno {
-  id: string;
+  id: number;
   fecha: string; // yyyy-MM-dd
   hora: string; // HH:mm
   nombre: string;
   tipo: TipoConsulta;
   obraSocial?: string;
   observacion?: string;
-
 }
 
+export function appointmentsToTurnos(
+  appointments: Appointment[],
+  patients: Patient[],
+  obrasSociales: ObraSocial[],
+): Turno[] {
+  const patientById = new Map(patients.map((p) => [p.id, p]));
+  const obraSocialById = new Map(obrasSociales.map((o) => [o.id, o]));
 
-const STORAGE_KEY = "turnos-v1";
+  return appointments.map((a) => {
+    const patient = patientById.get(a.patient_id);
+    const obraSocial = a.obra_social_id != null ? obraSocialById.get(a.obra_social_id) : undefined;
+    const esObraSocial = a.tipo_consulta.trim().toLowerCase() === "obra social";
 
-export function loadTurnos(): Turno[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Turno[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveTurnos(turnos: Turno[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(turnos));
+    return {
+      id: a.id,
+      fecha: a.fecha,
+      hora: a.hora_inicio.slice(0, 5),
+      nombre: patient?.nombre_completo ?? `Paciente #${a.patient_id}`,
+      tipo: esObraSocial ? "obra_social" : "particular",
+      ...(obraSocial ? { obraSocial: obraSocial.nombre } : {}),
+      ...(a.observaciones ? { observacion: a.observaciones } : {}),
+    };
+  });
 }
 
 export const MESES = [

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,12 +13,16 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ObraSocialCombobox } from "./ObraSocialCombobox";
-import { formatFechaLarga, type TipoConsulta } from "@/lib/turnos";
+import { useObraSociales } from "@/hooks/use-obra-sociales";
+import { OBRAS_SOCIALES, formatFechaLarga, type TipoConsulta, type Turno } from "@/lib/turnos";
 
 interface Props {
   fecha: string | null;
+  turno?: Turno | null;
   onClose: () => void;
   onSave: (data: {
+    id?: number;
+    fecha: string;
     hora: string;
     nombre: string;
     tipo: TipoConsulta;
@@ -27,12 +31,27 @@ interface Props {
   }) => void;
 }
 
-export function TurnoDialog({ fecha, onClose, onSave }: Props) {
+export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
+  const { data: obrasSociales = [] } = useObraSociales();
+  const obraSocialOptions =
+    obrasSociales.length > 0 ? obrasSociales.map((o) => o.nombre) : OBRAS_SOCIALES;
   const [hora, setHora] = useState("09:00");
   const [nombre, setNombre] = useState("");
   const [tipo, setTipo] = useState<TipoConsulta>("particular");
   const [obraSocial, setObraSocial] = useState("");
   const [observacion, setObservacion] = useState("");
+
+  const esEdicion = turno != null;
+  const fechaTurno = esEdicion ? turno.fecha : fecha;
+
+  useEffect(() => {
+    if (!turno) return;
+    setHora(turno.hora);
+    setNombre(turno.nombre);
+    setTipo(turno.tipo);
+    setObraSocial(turno.obraSocial ?? "");
+    setObservacion(turno.observacion ?? "");
+  }, [turno]);
 
   const reset = () => {
     setHora("09:00");
@@ -45,11 +64,9 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
   const esObraSocial = tipo === "obra_social";
   const puedeGuardar = Boolean(nombre.trim() && hora && (!esObraSocial || obraSocial));
 
-
-
   return (
     <Dialog
-      open={fecha !== null}
+      open={fecha !== null || turno !== null}
       onOpenChange={(open) => {
         if (!open) {
           reset();
@@ -59,8 +76,8 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
     >
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Nuevo turno</DialogTitle>
-          <DialogDescription>{fecha ? formatFechaLarga(fecha) : ""}</DialogDescription>
+          <DialogTitle>{esEdicion ? "Editar turno" : "Nuevo turno"}</DialogTitle>
+          <DialogDescription>{fechaTurno ? formatFechaLarga(fechaTurno) : ""}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -107,7 +124,11 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
           {esObraSocial && (
             <div className="animate-in fade-in slide-in-from-top-1 space-y-1.5 duration-300">
               <Label>Obra social</Label>
-              <ObraSocialCombobox value={obraSocial} onChange={setObraSocial} />
+              <ObraSocialCombobox
+                value={obraSocial}
+                onChange={setObraSocial}
+                options={obraSocialOptions}
+              />
             </div>
           )}
 
@@ -121,7 +142,6 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
               rows={3}
             />
           </div>
-
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
@@ -138,6 +158,8 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
             disabled={!puedeGuardar}
             onClick={() => {
               onSave({
+                ...(esEdicion ? { id: turno.id } : {}),
+                fecha: fechaTurno ?? "",
                 hora,
                 nombre: nombre.trim(),
                 tipo,
@@ -148,7 +170,7 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
               reset();
             }}
           >
-            Guardar
+            {esEdicion ? "Guardar cambios" : "Guardar"}
           </Button>
         </DialogFooter>
       </DialogContent>

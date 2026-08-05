@@ -6,7 +6,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { formatFechaLarga, type Turno } from "@/lib/turnos";
 import { TurnoLine } from "./TurnoLine";
 
@@ -14,11 +14,12 @@ interface Props {
   fecha: string | null;
   turnos: Turno[];
   onClose: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
+  onEdit: (turno: Turno) => void;
   onAdd: () => void;
 }
 
-export function DayDetailDialog({ fecha, turnos, onClose, onDelete, onAdd }: Props) {
+export function DayDetailDialog({ fecha, turnos, onClose, onDelete, onEdit, onAdd }: Props) {
   return (
     <Dialog open={fecha !== null} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-sm">
@@ -33,6 +34,15 @@ export function DayDetailDialog({ fecha, turnos, onClose, onDelete, onAdd }: Pro
               <div className="min-w-0 flex-1">
                 <TurnoLine turno={t} size="lg" />
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0 text-muted-foreground"
+                aria-label="Editar turno"
+                onClick={() => onEdit(t)}
+              >
+                <Pencil className="size-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"

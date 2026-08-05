@@ -1,13 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { UserMenu } from "@/components/turnos/UserMenu";
-
-import { MESES, loadTurnos, saveTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
+import {
+  useAppointments,
+  useCreateAppointment,
+  useDeleteAppointment,
+  useUpdateAppointment,
+} from "@/hooks/use-appointments";
+import { useCreatePatient, usePatients } from "@/hooks/use-patients";
+import { useObraSociales } from "@/hooks/use-obra-sociales";
+import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
 import fondoFloral from "@/assets/fondo-floral.jpg";
 
 export const Route = createFileRoute("/")({
@@ -33,18 +41,24 @@ function Index() {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-  const [turnos, setTurnos] = useState<Turno[]>([]);
   const [formFecha, setFormFecha] = useState<string | null>(null);
   const [detalleFecha, setDetalleFecha] = useState<string | null>(null);
+  const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [exporting, setExporting] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setTurnos(loadTurnos()), []);
+  const { data: appointments = [], isLoading, error } = useAppointments();
+  const { data: patients = [] } = usePatients();
+  const { data: obrasSociales = [] } = useObraSociales();
+  const createAppointment = useCreateAppointment();
+  const updateAppointment = useUpdateAppointment();
+  const deleteAppointment = useDeleteAppointment();
+  const createPatient = useCreatePatient();
 
-  const update = (next: Turno[]) => {
-    setTurnos(next);
-    saveTurnos(next);
-  };
+  const turnos = useMemo(
+    () => appointmentsToTurnos(appointments, patients, obrasSociales),
+    [appointments, patients, obrasSociales],
+  );
 
   const turnosPorDia = useMemo(() => {
     const map: Record<string, Turno[]> = {};
@@ -63,24 +77,76 @@ function Index() {
     setMonth(d.getMonth());
   };
 
-  const handleSave = (data: {
+  const handleSave = async (data: {
+    id?: number;
+    fecha: string;
     hora: string;
     nombre: string;
     tipo: TipoConsulta;
     obraSocial?: string;
     observacion?: string;
   }) => {
+    try {
+      const nombre = data.nombre.trim();
+      let patientId = patients.find(
+        (p) => p.nombre_completo.trim().toLowerCase() === nombre.toLowerCase(),
+      )?.id;
 
-    if (!formFecha) return;
-    update([
-      ...turnos,
-      {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        fecha: formFecha,
-        ...data,
-      },
-    ]);
-    setFormFecha(null);
+      if (patientId == null) {
+        const created = await createPatient.mutateAsync({
+          nombre_completo: nombre,
+          telefono: null,
+          obra_social_id: null,
+          observaciones: null,
+        });
+        patientId = created.id;
+      }
+
+      let obraSocialId: number | null = null;
+      if (data.tipo === "obra_social") {
+        if (!data.obraSocial) {
+          throw new Error("Seleccioná una obra social.");
+        }
+        const found = obrasSociales.find(
+          (o) => o.nombre.trim().toLowerCase() === data.obraSocial!.trim().toLowerCase(),
+        );
+        if (!found) {
+          throw new Error(`La obra social "${data.obraSocial}" no existe en el sistema.`);
+        }
+        obraSocialId = found.id;
+      }
+
+      const payload = {
+        patient_id: patientId,
+        obra_social_id: obraSocialId,
+        fecha: data.fecha,
+        hora_inicio: data.hora,
+        tipo_consulta: data.tipo === "obra_social" ? "Obra Social" : "Particular",
+        observaciones: data.observacion?.trim() ? data.observacion.trim() : null,
+      };
+
+      if (data.id != null) {
+        await updateAppointment.mutateAsync({ id: data.id, ...payload });
+        toast.success("Turno actualizado");
+      } else {
+        await createAppointment.mutateAsync(payload);
+        toast.success("Turno guardado");
+      }
+
+      setFormFecha(null);
+      setEditingTurno(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo guardar el turno.");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteAppointment.mutateAsync(id);
+      toast.success("Turno eliminado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo eliminar el turno.");
+    }
   };
 
   const handleExport = async () => {
@@ -117,14 +183,7 @@ function Index() {
         ctx.fillRect(0, 0, slice.width, slice.height);
         ctx.drawImage(canvas, 0, offset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
         if (page > 0) pdf.addPage();
-        pdf.addImage(
-          slice.toDataURL("image/png"),
-          "PNG",
-          margin,
-          margin,
-          contentW,
-          sliceH * scale,
-        );
+        pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, margin, contentW, sliceH * scale);
         offset += sliceH;
         page += 1;
       }
@@ -144,7 +203,6 @@ function Index() {
     >
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card/85 px-3 py-2.5 shadow-sm backdrop-blur-sm sm:flex sm:justify-between sm:px-4">
-
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold tracking-tight sm:text-2xl">
               Agenda de Turnos
@@ -189,6 +247,17 @@ function Index() {
             </Button>
           </div>
 
+          {isLoading && (
+            <div className="border-b border-border bg-card px-3 py-1.5 text-xs text-muted-foreground">
+              Cargando turnos…
+            </div>
+          )}
+          {!isLoading && error && (
+            <div className="border-b border-border bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              No se pudieron cargar los turnos del servidor.
+            </div>
+          )}
+
           <CalendarGrid
             year={year}
             month={month}
@@ -213,15 +282,26 @@ function Index() {
           </span>
           <UserMenu />
         </div>
-
       </div>
 
-      <TurnoDialog fecha={formFecha} onClose={() => setFormFecha(null)} onSave={handleSave} />
+      <TurnoDialog
+        fecha={formFecha}
+        turno={editingTurno}
+        onClose={() => {
+          setFormFecha(null);
+          setEditingTurno(null);
+        }}
+        onSave={handleSave}
+      />
       <DayDetailDialog
         fecha={detalleFecha}
         turnos={detalleTurnos}
         onClose={() => setDetalleFecha(null)}
-        onDelete={(id) => update(turnos.filter((t) => t.id !== id))}
+        onDelete={handleDelete}
+        onEdit={(t) => {
+          setDetalleFecha(null);
+          setEditingTurno(t);
+        }}
         onAdd={() => {
           const f = detalleFecha;
           setDetalleFecha(null);
