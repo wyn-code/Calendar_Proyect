@@ -46,38 +46,6 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
   const puedeGuardar = Boolean(nombre.trim() && hora && (!esObraSocial || obraSocial));
 
 
-interface Props {
-  fecha: string | null;
-  onClose: () => void;
-  onSave: (data: {
-    hora: string;
-    nombre: string;
-    tipo: TipoConsulta;
-    obraSocial?: string;
-  }) => void;
-}
-
-export function TurnoDialog({ fecha, onClose, onSave }: Props) {
-  const [hora, setHora] = useState("09:00");
-  const [nombre, setNombre] = useState("");
-  const [tipo, setTipo] = useState<TipoConsulta>("particular");
-  const [obraSocial, setObraSocial] = useState("");
-
-  const reset = () => {
-    setHora("09:00");
-    setNombre("");
-    setTipo("particular");
-    setObraSocial("");
-  };
-
-  const esObraSocial = tipo === "obra_social";
-  const puedeGuardar = Boolean(nombre.trim() && hora && (!esObraSocial || obraSocial));
-
-  const cerrarSesion = () => {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem("turnos-sesion");
-    window.location.reload();
-  };
 
   return (
     <Dialog
