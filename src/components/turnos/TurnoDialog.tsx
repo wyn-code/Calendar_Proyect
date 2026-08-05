@@ -11,17 +11,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { LogOut, UserCircle2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { ObraSocialCombobox } from "./ObraSocialCombobox";
 import { formatFechaLarga, type TipoConsulta } from "@/lib/turnos";
+
+interface Props {
+  fecha: string | null;
+  onClose: () => void;
+  onSave: (data: {
+    hora: string;
+    nombre: string;
+    tipo: TipoConsulta;
+    obraSocial?: string;
+    observacion?: string;
+  }) => void;
+}
+
+export function TurnoDialog({ fecha, onClose, onSave }: Props) {
+  const [hora, setHora] = useState("09:00");
+  const [nombre, setNombre] = useState("");
+  const [tipo, setTipo] = useState<TipoConsulta>("particular");
+  const [obraSocial, setObraSocial] = useState("");
+  const [observacion, setObservacion] = useState("");
+
+  const reset = () => {
+    setHora("09:00");
+    setNombre("");
+    setTipo("particular");
+    setObraSocial("");
+    setObservacion("");
+  };
+
+  const esObraSocial = tipo === "obra_social";
+  const puedeGuardar = Boolean(nombre.trim() && hora && (!esObraSocial || obraSocial));
+
 
 interface Props {
   fecha: string | null;
