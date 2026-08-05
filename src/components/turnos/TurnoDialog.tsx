@@ -91,49 +91,26 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
 
           <div className="space-y-2">
             <Label>Tipo de consulta</Label>
-            <div className="flex items-center gap-2">
-              <RadioGroup
-                value={tipo}
-                onValueChange={(v) => setTipo(v as TipoConsulta)}
-                className="grid flex-1 grid-cols-2 gap-2"
+            <RadioGroup
+              value={tipo}
+              onValueChange={(v) => setTipo(v as TipoConsulta)}
+              className="grid grid-cols-2 gap-2"
+            >
+              <Label
+                htmlFor="t-part"
+                className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2.5 text-sm font-medium has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-accent"
               >
-                <Label
-                  htmlFor="t-part"
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2.5 text-sm font-medium has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-accent"
-                >
-                  <RadioGroupItem value="particular" id="t-part" />
-                  Particular
-                </Label>
-                <Label
-                  htmlFor="t-os"
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2.5 text-sm font-medium has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-accent"
-                >
-                  <RadioGroupItem value="obra_social" id="t-os" />
-                  Obra Social
-                </Label>
-              </RadioGroup>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Cuenta"
-                    className="shrink-0 text-muted-foreground"
-                  >
-                    <UserCircle2 className="size-6" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={cerrarSesion}>
-                    <LogOut className="size-4" />
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                <RadioGroupItem value="particular" id="t-part" />
+                Particular
+              </Label>
+              <Label
+                htmlFor="t-os"
+                className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2.5 text-sm font-medium has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-accent"
+              >
+                <RadioGroupItem value="obra_social" id="t-os" />
+                Obra Social
+              </Label>
+            </RadioGroup>
           </div>
 
           {esObraSocial && (
@@ -142,6 +119,18 @@ export function TurnoDialog({ fecha, onClose, onSave }: Props) {
               <ObraSocialCombobox value={obraSocial} onChange={setObraSocial} />
             </div>
           )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="observacion">Observación</Label>
+            <Textarea
+              id="observacion"
+              placeholder="Notas del turno (opcional)"
+              value={observacion}
+              onChange={(e) => setObservacion(e.target.value)}
+              rows={3}
+            />
+          </div>
+
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
