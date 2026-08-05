@@ -21,6 +21,8 @@ export interface Turno {
   nombre: string;
   tipo: TipoConsulta;
   obraSocial?: string;
+  observacion?: string;
+
 }
 
 
