@@ -1,12 +1,28 @@
 export type TipoConsulta = "particular" | "obra_social";
 
+export const OBRAS_SOCIALES = [
+  "OSDE",
+  "Swiss Medical",
+  "Galeno",
+  "Medifé",
+  "OMINT",
+  "IOMA",
+  "PAMI",
+  "OSECAC",
+  "Sancor Salud",
+  "Unión Personal",
+  "Otra",
+];
+
 export interface Turno {
   id: string;
   fecha: string; // yyyy-MM-dd
   hora: string; // HH:mm
   nombre: string;
   tipo: TipoConsulta;
+  obraSocial?: string;
 }
+
 
 const STORAGE_KEY = "turnos-v1";
 
