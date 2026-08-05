@@ -61,7 +61,12 @@ function Index() {
     setMonth(d.getMonth());
   };
 
-  const handleSave = (data: { hora: string; nombre: string; tipo: TipoConsulta }) => {
+  const handleSave = (data: {
+    hora: string;
+    nombre: string;
+    tipo: TipoConsulta;
+    obraSocial?: string;
+  }) => {
     if (!formFecha) return;
     update([
       ...turnos,
