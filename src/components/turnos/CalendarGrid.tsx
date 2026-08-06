@@ -35,7 +35,7 @@ export function CalendarGrid({
         ))}
       </div>
 
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7" data-export-week>
         {weeks.flat().map((date) => {
           const key = toKey(date);
           const inMonth = date.getMonth() === month;

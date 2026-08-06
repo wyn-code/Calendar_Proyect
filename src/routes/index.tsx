@@ -182,6 +182,24 @@ function Index() {
   const handleExport = async () => {
     if (!gridRef.current) return;
     setExporting(true);
+    // html2canvas puede fallar parseando colores oklch() (Tailwind v4). Durante el
+    // export se fuerza el tema a valores hex para que header, bordes y badges se
+    // rendericen siempre, y se quita apenas termina.
+    const exportStyle = document.createElement("style");
+    exportStyle.dataset["exportTheme"] = "hex";
+    exportStyle.textContent = `:root {
+      --background: #ffe6e5; --foreground: #080507;
+      --card: #fff9f8; --card-foreground: #080507;
+      --primary: #42212e; --primary-foreground: #fff0ed;
+      --particular: #fca3a7; --particular-foreground: #2e090c;
+      --obra-social: #baabdc; --obra-social-foreground: #160f24;
+      --secondary: #f3d7d5; --secondary-foreground: #0c070a;
+      --muted: #f3d7d5; --muted-foreground: #2e222a;
+      --accent: #f3c9c8; --accent-foreground: #0c070a;
+      --destructive: #a40a10; --destructive-foreground: #fff0ed;
+      --border: #d1b2b1; --input: #d1b2b1; --ring: #42212e;
+    }`;
+    document.head.appendChild(exportStyle);
     try {
       await new Promise((resolve) => {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)));
@@ -197,18 +215,66 @@ function Index() {
       const margin = 8;
       const contentW = pw - margin * 2;
       const contentH = ph - margin * 2;
-      // Escala fit-to-page: todo el calendario entra en una sola hoja A4 horizontal.
-      const scale = Math.min(contentW / canvas.width, contentH / canvas.height);
-      const fitW = canvas.width * scale;
-      const fitH = canvas.height * scale;
-      if (fitW <= 0 || fitH <= 0) return;
+      const sWidth = contentW / canvas.width;
+      const sFit = Math.min(sWidth, contentH / canvas.height);
 
-      const dataUrl = canvas.toDataURL("image/png");
-      const x = margin + (contentW - fitW) / 2;
-      const y = margin + (contentH - fitH) / 2;
-      pdf.addImage(dataUrl, "PNG", x, y, fitW, fitH);
+      const addImageCentered = (img: HTMLCanvasElement, y: number, w: number, h: number) => {
+        if (w <= 0 || h <= 0) return;
+        pdf.addImage(img, "PNG", margin + (contentW - w) / 2, y, w, h);
+      };
+
+      // Fuente mínima del modo export: 8px en el DOM, renderizado a scale=2 => 16px en canvas.
+      // 1px de canvas -> `scale` mm en el PDF; el piso legible es ~6pt (6 * 25.4/72 mm) para
+      // priorizar que el mes completo entre en una sola hoja horizontal.
+      const minFontPx = 16;
+      const minScale = (6 * 25.4) / 72 / minFontPx;
+
+      if (sFit >= minScale) {
+        // Todo el calendario entra en una sola hoja con fuente >= 7pt.
+        addImageCentered(canvas, margin, canvas.width * sFit, canvas.height * sFit);
+      } else {
+        // No entra con fuente legible: se corta por semana, cada una a ancho completo.
+        const grid = gridRef.current;
+        const gRect = grid.getBoundingClientRect();
+        const container = grid.querySelector("[data-export-week]");
+        const cells = container
+          ? Array.from(container.querySelectorAll<HTMLElement>('[role="button"]'))
+          : [];
+        const tops = new Set<number>();
+        for (const cell of cells) {
+          tops.add(Math.round(cell.getBoundingClientRect().top - gRect.top));
+        }
+        const weekOffsets = [...tops].sort((a, b) => a - b);
+        const gridHeight = grid.getBoundingClientRect().height;
+
+        const slice = (y: number, h: number) => {
+          const c = document.createElement("canvas");
+          c.width = canvas.width;
+          c.height = Math.max(1, Math.round(h));
+          const ctx = c.getContext("2d");
+          if (ctx) ctx.drawImage(canvas, 0, y, c.width, Math.round(h), 0, 0, c.width, c.height);
+          return c;
+        };
+
+        let y = margin;
+        for (let i = 0; i < weekOffsets.length; i++) {
+          const top = i === 0 ? 0 : (weekOffsets[i] ?? 0);
+          const next = weekOffsets[i + 1] ?? gridHeight;
+          const img = slice(top * 2, (next - top) * 2);
+          let h = img.height * sWidth;
+          if (h > contentH) h = contentH;
+          if (y + h > ph - margin) {
+            pdf.addPage();
+            y = margin;
+          }
+          addImageCentered(img, y, img.width * sWidth, h);
+          y += h;
+        }
+      }
+
       pdf.save(`turnos-${MESES[month]?.toLowerCase()}-${year}.pdf`);
     } finally {
+      exportStyle.remove();
       setExporting(false);
     }
   };

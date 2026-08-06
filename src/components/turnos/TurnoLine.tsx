@@ -2,27 +2,17 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Turno } from "@/lib/turnos";
 
-function Chip({
-  turno,
-  size,
-  dense = false,
-}: {
-  turno: Turno;
-  size: "sm" | "lg";
-  dense?: boolean;
-}) {
+function Chip({ turno, size }: { turno: Turno; size: "sm" | "lg" }) {
   const esParticular = turno.tipo === "particular";
   const etiqueta = esParticular ? "P" : turno.obraSocial?.trim() || "O.S";
 
   const chip = (
     <span
       className={cn(
-        "shrink min-w-0 truncate rounded px-1 font-bold",
+        "shrink min-w-0 rounded px-1 font-bold",
         size === "sm"
-          ? dense
-            ? "max-w-[2.5rem] px-0.5 text-[8px] leading-4"
-            : "max-w-[5.5rem] text-[9px] leading-4"
-          : "max-w-[9rem] px-1.5 py-0.5 text-[11px]",
+          ? "max-w-[5.5rem] truncate text-[9px] leading-4"
+          : "max-w-[9rem] truncate px-1.5 py-0.5 text-[11px]",
         esParticular
           ? "bg-particular text-particular-foreground"
           : "bg-obra-social text-obra-social-foreground",
@@ -32,7 +22,7 @@ function Chip({
     </span>
   );
 
-  if (dense || esParticular || !turno.obraSocial?.trim()) return chip;
+  if (esParticular || !turno.obraSocial?.trim()) return chip;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -54,25 +44,45 @@ export function TurnoLine({
   dense?: boolean;
 }) {
   if (size === "sm" && dense) {
+    const esParticular = turno.tipo === "particular";
+    const cobertura = esParticular ? "Particular" : turno.obraSocial?.trim() || "Obra Social";
+
     return (
-      <div className="min-w-0 rounded bg-muted/60 px-1 py-0.5 text-[9px] leading-tight">
-        <div className="flex items-center justify-between gap-1">
-          <span className="shrink-0 font-semibold tabular-nums text-[10px]">{turno.hora}</span>
-          <Chip turno={turno} size="sm" dense />
+      <div className="min-w-0 break-words border-b border-border/50 px-0.5 pb-1 text-[8px] leading-[1.15] last:border-b-0">
+        <div className="font-semibold tabular-nums text-[9px]">{turno.hora}</div>
+        <div>{turno.nombre}</div>
+        <div
+          className={cn(
+            "mt-0.5 w-fit max-w-full break-words whitespace-normal rounded px-1 py-px text-[8px] font-bold leading-[1.2]",
+            esParticular
+              ? "bg-particular text-particular-foreground"
+              : "bg-obra-social text-obra-social-foreground",
+          )}
+        >
+          {cobertura}
         </div>
-        <div className="truncate">{turno.nombre}</div>
       </div>
     );
   }
 
   if (size === "sm") {
+    const esParticular = turno.tipo === "particular";
+    const cobertura = esParticular ? "Particular" : turno.obraSocial?.trim() || "Obra Social";
+
     return (
-      <div className="flex flex-wrap items-baseline gap-x-1 rounded bg-muted/60 px-1 py-px text-[10px] leading-snug sm:text-xs">
-        <span className="shrink-0 font-semibold tabular-nums">{turno.hora}</span>
-        <span className="shrink-0 text-muted-foreground">-</span>
-        <span className="break-words">{turno.nombre}</span>
-        <span className="shrink-0 text-muted-foreground">-</span>
-        <Chip turno={turno} size="sm" />
+      <div className="min-w-0 break-words border-b border-border/50 px-1 py-1 text-[10px] leading-snug last:border-b-0 sm:text-xs">
+        <div className="font-semibold tabular-nums">{turno.hora}</div>
+        <div className="break-words">{turno.nombre}</div>
+        <div
+          className={cn(
+            "mt-0.5 w-fit max-w-full break-words whitespace-normal rounded px-1 py-px text-[9px] font-bold leading-[1.2]",
+            esParticular
+              ? "bg-particular text-particular-foreground"
+              : "bg-obra-social text-obra-social-foreground",
+          )}
+        >
+          {cobertura}
+        </div>
       </div>
     );
   }
