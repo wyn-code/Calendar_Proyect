@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ObraSocialCombobox } from "./ObraSocialCombobox";
+import { PatientCombobox } from "./PatientCombobox";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
 import { OBRAS_SOCIALES, formatFechaLarga, type TipoConsulta, type Turno } from "@/lib/turnos";
 
@@ -25,6 +26,7 @@ interface Props {
     fecha: string;
     hora: string;
     nombre: string;
+    patientId?: number | null;
     tipo: TipoConsulta;
     obraSocial?: string;
     observacion?: string;
@@ -36,18 +38,22 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
   const obraSocialOptions =
     obrasSociales.length > 0 ? obrasSociales.map((o) => o.nombre) : OBRAS_SOCIALES;
   const [hora, setHora] = useState("09:00");
-  const [nombre, setNombre] = useState("");
+  const [nombreTexto, setNombreTexto] = useState("");
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [tipo, setTipo] = useState<TipoConsulta>("particular");
   const [obraSocial, setObraSocial] = useState("");
   const [observacion, setObservacion] = useState("");
 
   const esEdicion = turno != null;
   const fechaTurno = esEdicion ? turno.fecha : fecha;
+  const nombreOriginal = esEdicion ? turno.nombre : "";
+  const reasignando = esEdicion && nombreTexto.trim() !== nombreOriginal.trim();
 
   useEffect(() => {
     if (!turno) return;
     setHora(turno.hora);
-    setNombre(turno.nombre);
+    setNombreTexto(turno.nombre);
+    setSelectedPatientId(turno.patientId);
     setTipo(turno.tipo);
     setObraSocial(turno.obraSocial ?? "");
     setObservacion(turno.observacion ?? "");
@@ -55,14 +61,15 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
 
   const reset = () => {
     setHora("09:00");
-    setNombre("");
+    setNombreTexto("");
+    setSelectedPatientId(null);
     setTipo("particular");
     setObraSocial("");
     setObservacion("");
   };
 
   const esObraSocial = tipo === "obra_social";
-  const puedeGuardar = Boolean(nombre.trim() && hora && (!esObraSocial || obraSocial));
+  const puedeGuardar = Boolean(nombreTexto.trim() && hora && (!esObraSocial || obraSocial));
 
   return (
     <Dialog
@@ -88,13 +95,23 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
 
           <div className="space-y-1.5">
             <Label htmlFor="nombre">Nombre y apellido</Label>
-            <Input
-              id="nombre"
+            <PatientCombobox
+              value={nombreTexto}
               placeholder="Ej: María Gómez"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              autoComplete="off"
+              onChange={(v) => {
+                setNombreTexto(v);
+                setSelectedPatientId(null);
+              }}
+              onSelectPatient={(id, nombrePaciente) => {
+                setSelectedPatientId(id);
+                setNombreTexto(nombrePaciente);
+              }}
             />
+            {reasignando && (
+              <p className="text-xs text-muted-foreground">
+                Este turno se reasignará a un paciente distinto.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -161,7 +178,8 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
                 ...(esEdicion ? { id: turno.id } : {}),
                 fecha: fechaTurno ?? "",
                 hora,
-                nombre: nombre.trim(),
+                nombre: nombreTexto.trim(),
+                ...(selectedPatientId != null ? { patientId: selectedPatientId } : {}),
                 tipo,
                 ...(esObraSocial ? { obraSocial } : {}),
                 ...(observacion.trim() ? { observacion: observacion.trim() } : {}),

@@ -17,10 +17,20 @@ export function useCreateAppointment() {
   });
 }
 
+export interface AppointmentUpdate {
+  patient_id?: number;
+  nombre_completo?: string;
+  obra_social_id: number | null;
+  fecha: string;
+  hora_inicio: string;
+  tipo_consulta: string;
+  observaciones: string | null;
+}
+
 export function useUpdateAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: AppointmentCreate & { id: number }) =>
+    mutationFn: ({ id, ...data }: AppointmentUpdate & { id: number }) =>
       api.put<Appointment>(`/appointments/${id}`, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["appointments"] }),
   });

@@ -18,6 +18,7 @@ export const OBRAS_SOCIALES = [
 
 export interface Turno {
   id: number;
+  patientId: number;
   fecha: string; // yyyy-MM-dd
   hora: string; // HH:mm
   nombre: string;
@@ -41,6 +42,7 @@ export function appointmentsToTurnos(
 
     return {
       id: a.id,
+      patientId: a.patient_id,
       fecha: a.fecha,
       hora: a.hora_inicio.slice(0, 5),
       nombre: patient?.nombre_completo ?? `Paciente #${a.patient_id}`,

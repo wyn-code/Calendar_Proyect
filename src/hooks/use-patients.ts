@@ -9,6 +9,15 @@ export function usePatients() {
   });
 }
 
+export function usePatientSearch(search: string, enabled: boolean) {
+  const trimmed = search.trim();
+  return useQuery({
+    queryKey: ["patients", "search", trimmed],
+    queryFn: () => api.get<Patient[]>(`/patients/?search=${encodeURIComponent(trimmed)}`),
+    enabled: enabled && trimmed.length >= 2,
+  });
+}
+
 export function useCreatePatient() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -104,24 +104,20 @@ function Index() {
     fecha: string;
     hora: string;
     nombre: string;
+    patientId?: number | null;
     tipo: TipoConsulta;
     obraSocial?: string;
     observacion?: string;
   }) => {
     try {
       const nombre = data.nombre.trim();
-      let patientId = patients.find(
-        (p) => p.nombre_completo.trim().toLowerCase() === nombre.toLowerCase(),
-      )?.id;
+      let patientId: number | null = data.patientId ?? null;
 
       if (patientId == null) {
-        const created = await createPatient.mutateAsync({
-          nombre_completo: nombre,
-          telefono: null,
-          obra_social_id: null,
-          observaciones: null,
-        });
-        patientId = created.id;
+        const match = patients.find(
+          (p) => p.nombre_completo.trim().toLowerCase() === nombre.toLowerCase(),
+        );
+        if (match) patientId = match.id;
       }
 
       let obraSocialId: number | null = null;
@@ -138,8 +134,7 @@ function Index() {
         obraSocialId = found.id;
       }
 
-      const payload = {
-        patient_id: patientId,
+      const base = {
         obra_social_id: obraSocialId,
         fecha: data.fecha,
         hora_inicio: data.hora,
@@ -148,10 +143,23 @@ function Index() {
       };
 
       if (data.id != null) {
-        await updateAppointment.mutateAsync({ id: data.id, ...payload });
+        await updateAppointment.mutateAsync({
+          id: data.id,
+          ...base,
+          ...(patientId != null ? { patient_id: patientId } : { nombre_completo: nombre }),
+        });
         toast.success("Turno actualizado");
       } else {
-        await createAppointment.mutateAsync(payload);
+        if (patientId == null) {
+          const created = await createPatient.mutateAsync({
+            nombre_completo: nombre,
+            telefono: null,
+            obra_social_id: null,
+            observaciones: null,
+          });
+          patientId = created.id;
+        }
+        await createAppointment.mutateAsync({ ...base, patient_id: patientId });
         toast.success("Turno guardado");
       }
 
