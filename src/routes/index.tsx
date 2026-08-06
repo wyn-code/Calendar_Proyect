@@ -191,13 +191,13 @@ function Index() {
         import("jspdf"),
       ]);
       const canvas = await html2canvas(gridRef.current, { scale: 2, backgroundColor: "#ffffff" });
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const pw = pdf.internal.pageSize.getWidth();
       const ph = pdf.internal.pageSize.getHeight();
       const margin = 8;
       const contentW = pw - margin * 2;
       const contentH = ph - margin * 2;
-      // Escala para que el ancho completo entre en A4 vertical.
+      // Escala para que el ancho completo entre en A4 horizontal.
       const scale = contentW / canvas.width;
       const totalH = canvas.height * scale;
       // Alto de canvas (px) que entra en una página.
