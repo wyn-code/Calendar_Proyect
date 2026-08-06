@@ -197,30 +197,16 @@ function Index() {
       const margin = 8;
       const contentW = pw - margin * 2;
       const contentH = ph - margin * 2;
-      // Escala para que el ancho completo entre en A4 horizontal.
-      const scale = contentW / canvas.width;
-      const totalH = canvas.height * scale;
-      // Alto de canvas (px) que entra en una página.
-      const pageCanvasH = Math.floor(contentH / scale);
+      // Escala fit-to-page: todo el calendario entra en una sola hoja A4 horizontal.
+      const scale = Math.min(contentW / canvas.width, contentH / canvas.height);
+      const fitW = canvas.width * scale;
+      const fitH = canvas.height * scale;
+      if (fitW <= 0 || fitH <= 0) return;
 
-      let offset = 0;
-      let page = 0;
-      while (offset < canvas.height) {
-        const sliceH = Math.min(pageCanvasH, canvas.height - offset);
-        const slice = document.createElement("canvas");
-        slice.width = canvas.width;
-        slice.height = sliceH;
-        const ctx = slice.getContext("2d");
-        if (!ctx) break;
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, slice.width, slice.height);
-        ctx.drawImage(canvas, 0, offset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-        if (page > 0) pdf.addPage();
-        pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, margin, contentW, sliceH * scale);
-        offset += sliceH;
-        page += 1;
-      }
-      if (totalH <= 0) return;
+      const dataUrl = canvas.toDataURL("image/png");
+      const x = margin + (contentW - fitW) / 2;
+      const y = margin + (contentH - fitH) / 2;
+      pdf.addImage(dataUrl, "PNG", x, y, fitW, fitH);
       pdf.save(`turnos-${MESES[month]?.toLowerCase()}-${year}.pdf`);
     } finally {
       setExporting(false);
@@ -295,6 +281,7 @@ function Index() {
             year={year}
             month={month}
             turnosPorDia={turnosPorDiaVisibles}
+            exporting={exporting}
             onDayClick={(key) => setFormFecha(key)}
             onTurnosClick={(key: string) => setDetalleFecha(key)}
           />
