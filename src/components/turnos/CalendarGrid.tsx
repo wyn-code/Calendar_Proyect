@@ -8,17 +8,9 @@ interface Props {
   turnosPorDia: Record<string, Turno[]>;
   onDayClick: (key: string) => void;
   onTurnosClick: (key: string) => void;
-  exporting?: boolean;
 }
 
-export function CalendarGrid({
-  year,
-  month,
-  turnosPorDia,
-  onDayClick,
-  onTurnosClick,
-  exporting = false,
-}: Props) {
+export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onTurnosClick }: Props) {
   const weeks = buildMonthGrid(year, month);
   const todayKey = toKey(new Date());
 
@@ -35,7 +27,7 @@ export function CalendarGrid({
         ))}
       </div>
 
-      <div className="grid grid-cols-7" data-export-week>
+      <div className="grid grid-cols-7">
         {weeks.flat().map((date) => {
           const key = toKey(date);
           const inMonth = date.getMonth() === month;
@@ -67,14 +59,14 @@ export function CalendarGrid({
 
               {turnos.length > 0 && (
                 <div
-                  className={cn("min-w-0", exporting ? "grid grid-cols-2 gap-px" : "space-y-px")}
+                  className="min-w-0 space-y-px"
                   onClick={(e) => {
                     e.stopPropagation();
                     onTurnosClick(key);
                   }}
                 >
                   {turnos.map((t) => (
-                    <TurnoLine key={t.id} turno={t} dense={exporting} />
+                    <TurnoLine key={t.id} turno={t} />
                   ))}
                 </div>
               )}

@@ -34,37 +34,7 @@ function Chip({ turno, size }: { turno: Turno; size: "sm" | "lg" }) {
   );
 }
 
-export function TurnoLine({
-  turno,
-  size = "sm",
-  dense = false,
-}: {
-  turno: Turno;
-  size?: "sm" | "lg";
-  dense?: boolean;
-}) {
-  if (size === "sm" && dense) {
-    const esParticular = turno.tipo === "particular";
-    const cobertura = esParticular ? "Particular" : turno.obraSocial?.trim() || "Obra Social";
-
-    return (
-      <div className="min-w-0 break-words border-b border-border/50 px-0.5 pb-1 text-[8px] leading-[1.15] last:border-b-0">
-        <div className="font-semibold tabular-nums text-[9px]">{turno.hora}</div>
-        <div>{turno.nombre}</div>
-        <div
-          className={cn(
-            "mt-0.5 w-fit max-w-full break-words whitespace-normal rounded px-1 py-px text-[8px] font-bold leading-[1.2]",
-            esParticular
-              ? "bg-particular text-particular-foreground"
-              : "bg-obra-social text-obra-social-foreground",
-          )}
-        >
-          {cobertura}
-        </div>
-      </div>
-    );
-  }
-
+export function TurnoLine({ turno, size = "sm" }: { turno: Turno; size?: "sm" | "lg" }) {
   if (size === "sm") {
     const esParticular = turno.tipo === "particular";
     const cobertura = esParticular ? "Particular" : turno.obraSocial?.trim() || "Obra Social";

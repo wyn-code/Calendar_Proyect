@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { useMemo, useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
@@ -8,7 +8,8 @@ import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { UserMenu } from "@/components/turnos/UserMenu";
 import { LoginModal } from "@/components/auth/LoginModal";
-import { getSession } from "@/lib/auth";
+import { getSession, getToken } from "@/lib/auth";
+import { API_V1_PREFIX, getApiBaseUrl } from "@/lib/config";
 import {
   useAppointments,
   useCreateAppointment,
@@ -27,12 +28,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Agenda mensual de turnos: cargá pacientes por día, diferenciá Particular y Obra Social y descargá el calendario en PDF.",
+          "Agenda mensual de turnos: cargá pacientes por día, diferenciá Particular y Obra Social y descargá el calendario en Excel.",
       },
       { property: "og:title", content: "Agenda de Turnos | Calendario mensual" },
       {
         property: "og:description",
-        content: "Cargá turnos desde el celular y exportá el mes completo en PDF A4 apaisado.",
+        content: "Cargá turnos desde el celular y exportá el mes completo en Excel.",
       },
     ],
   }),
@@ -49,7 +50,6 @@ function Index() {
   const [exporting, setExporting] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -82,16 +82,6 @@ function Index() {
     }
     return map;
   }, [turnos]);
-
-  const turnosPorDiaVisibles = useMemo(() => {
-    if (!exporting) return turnosPorDia;
-    const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
-    const map: Record<string, Turno[]> = {};
-    for (const [key, list] of Object.entries(turnosPorDia)) {
-      if (key.startsWith(prefix)) map[key] = list;
-    }
-    return map;
-  }, [turnosPorDia, exporting, year, month]);
 
   const shiftMonth = (delta: number) => {
     const d = new Date(year, month + delta, 1);
@@ -180,101 +170,26 @@ function Index() {
   };
 
   const handleExport = async () => {
-    if (!gridRef.current) return;
     setExporting(true);
-    // html2canvas puede fallar parseando colores oklch() (Tailwind v4). Durante el
-    // export se fuerza el tema a valores hex para que header, bordes y badges se
-    // rendericen siempre, y se quita apenas termina.
-    const exportStyle = document.createElement("style");
-    exportStyle.dataset["exportTheme"] = "hex";
-    exportStyle.textContent = `:root {
-      --background: #ffe6e5; --foreground: #080507;
-      --card: #fff9f8; --card-foreground: #080507;
-      --primary: #42212e; --primary-foreground: #fff0ed;
-      --particular: #fca3a7; --particular-foreground: #2e090c;
-      --obra-social: #baabdc; --obra-social-foreground: #160f24;
-      --secondary: #f3d7d5; --secondary-foreground: #0c070a;
-      --muted: #f3d7d5; --muted-foreground: #2e222a;
-      --accent: #f3c9c8; --accent-foreground: #0c070a;
-      --destructive: #a40a10; --destructive-foreground: #fff0ed;
-      --border: #d1b2b1; --input: #d1b2b1; --ring: #42212e;
-    }`;
-    document.head.appendChild(exportStyle);
     try {
-      await new Promise((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)));
+      const token = getToken();
+      const url = `${getApiBaseUrl()}${API_V1_PREFIX}/export/calendario?year=${year}&month=${month + 1}`;
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import("html2canvas-pro"),
-        import("jspdf"),
-      ]);
-      const canvas = await html2canvas(gridRef.current, { scale: 2, backgroundColor: "#ffffff" });
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      const pw = pdf.internal.pageSize.getWidth();
-      const ph = pdf.internal.pageSize.getHeight();
-      const margin = 8;
-      const contentW = pw - margin * 2;
-      const contentH = ph - margin * 2;
-      const sWidth = contentW / canvas.width;
-      const sFit = Math.min(sWidth, contentH / canvas.height);
-
-      const addImageCentered = (img: HTMLCanvasElement, y: number, w: number, h: number) => {
-        if (w <= 0 || h <= 0) return;
-        pdf.addImage(img, "PNG", margin + (contentW - w) / 2, y, w, h);
-      };
-
-      // Fuente mínima del modo export: 8px en el DOM, renderizado a scale=2 => 16px en canvas.
-      // 1px de canvas -> `scale` mm en el PDF; el piso legible es ~6pt (6 * 25.4/72 mm) para
-      // priorizar que el mes completo entre en una sola hoja horizontal.
-      const minFontPx = 16;
-      const minScale = (6 * 25.4) / 72 / minFontPx;
-
-      if (sFit >= minScale) {
-        // Todo el calendario entra en una sola hoja con fuente >= 7pt.
-        addImageCentered(canvas, margin, canvas.width * sFit, canvas.height * sFit);
-      } else {
-        // No entra con fuente legible: se corta por semana, cada una a ancho completo.
-        const grid = gridRef.current;
-        const gRect = grid.getBoundingClientRect();
-        const container = grid.querySelector("[data-export-week]");
-        const cells = container
-          ? Array.from(container.querySelectorAll<HTMLElement>('[role="button"]'))
-          : [];
-        const tops = new Set<number>();
-        for (const cell of cells) {
-          tops.add(Math.round(cell.getBoundingClientRect().top - gRect.top));
-        }
-        const weekOffsets = [...tops].sort((a, b) => a - b);
-        const gridHeight = grid.getBoundingClientRect().height;
-
-        const slice = (y: number, h: number) => {
-          const c = document.createElement("canvas");
-          c.width = canvas.width;
-          c.height = Math.max(1, Math.round(h));
-          const ctx = c.getContext("2d");
-          if (ctx) ctx.drawImage(canvas, 0, y, c.width, Math.round(h), 0, 0, c.width, c.height);
-          return c;
-        };
-
-        let y = margin;
-        for (let i = 0; i < weekOffsets.length; i++) {
-          const top = i === 0 ? 0 : (weekOffsets[i] ?? 0);
-          const next = weekOffsets[i + 1] ?? gridHeight;
-          const img = slice(top * 2, (next - top) * 2);
-          let h = img.height * sWidth;
-          if (h > contentH) h = contentH;
-          if (y + h > ph - margin) {
-            pdf.addPage();
-            y = margin;
-          }
-          addImageCentered(img, y, img.width * sWidth, h);
-          y += h;
-        }
-      }
-
-      pdf.save(`turnos-${MESES[month]?.toLowerCase()}-${year}.pdf`);
+      if (!response.ok) throw new Error("No se pudo generar el Excel.");
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `calendario-turnos-${MESES[month]?.toLowerCase()}-${year}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "No se pudo generar el Excel.");
     } finally {
-      exportStyle.remove();
       setExporting(false);
     }
   };
@@ -302,12 +217,12 @@ function Index() {
             size="sm"
             className="shrink-0 gap-1.5"
           >
-            <Download className="size-4" />
-            {exporting ? "Generando..." : "Descargar PDF"}
+            <FileSpreadsheet className="size-4" />
+            {exporting ? "Generando..." : "Descargar en Excel"}
           </Button>
         </header>
 
-        <div ref={gridRef} className="space-y-0 rounded-lg bg-card">
+        <div className="space-y-0 rounded-lg bg-card">
           <div className="flex items-center justify-between rounded-t-lg bg-primary px-3 py-2.5 text-primary-foreground">
             <Button
               variant="ghost"
@@ -346,8 +261,7 @@ function Index() {
           <CalendarGrid
             year={year}
             month={month}
-            turnosPorDia={turnosPorDiaVisibles}
-            exporting={exporting}
+            turnosPorDia={turnosPorDia}
             onDayClick={(key) => setFormFecha(key)}
             onTurnosClick={(key: string) => setDetalleFecha(key)}
           />
