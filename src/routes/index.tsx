@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, FileSpreadsheet } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
@@ -28,12 +28,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Agenda mensual de turnos: cargá pacientes por día, diferenciá Particular y Obra Social y descargá el calendario en Excel.",
+          "Agenda mensual de turnos: cargá pacientes por día, diferenciá Particular y Obra Social y descargá la planilla de sesiones en PDF.",
       },
       { property: "og:title", content: "Agenda de Turnos | Calendario mensual" },
       {
         property: "og:description",
-        content: "Cargá turnos desde el celular y exportá el mes completo en Excel.",
+        content: "Cargá turnos desde el celular y descargá la planilla de sesiones del mes en PDF.",
       },
     ],
   }),
@@ -47,7 +47,7 @@ function Index() {
   const [formFecha, setFormFecha] = useState<string | null>(null);
   const [detalleFecha, setDetalleFecha] = useState<string | null>(null);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [exportingPlanilla, setExportingPlanilla] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -169,28 +169,54 @@ function Index() {
     }
   };
 
-  const handleExport = async () => {
-    setExporting(true);
+  const getFilenameFromDisposition = (disposition: string | null, fallback: string): string => {
+    if (!disposition) return fallback;
+    const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disposition);
+    if (star?.[1]) {
+      try {
+        return decodeURIComponent(star[1].trim().replace(/^"|"$/g, ""));
+      } catch {
+        // ignore malformed encoded filename
+      }
+    }
+    const plain = /filename=(?:"([^"]+)"|([^;]+))/i.exec(disposition);
+    const name = plain?.[1] ?? plain?.[2];
+    return name?.trim() ? name.trim() : fallback;
+  };
+
+  const downloadBlob = (blob: Blob, name: string) => {
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  };
+
+  const handleExportPlanilla = async () => {
+    setExportingPlanilla(true);
     try {
       const token = getToken();
-      const url = `${getApiBaseUrl()}${API_V1_PREFIX}/export/calendario?year=${year}&month=${month + 1}`;
+      const url = `${getApiBaseUrl()}${API_V1_PREFIX}/export/planilla-sesiones?year=${year}&month=${month + 1}`;
       const response = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!response.ok) throw new Error("No se pudo generar el Excel.");
+      if (!response.ok) throw new Error("No se pudo generar la planilla de sesiones.");
       const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `calendario-turnos-${MESES[month]?.toLowerCase()}-${year}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(objectUrl);
+      const disposition = response.headers.get("Content-Disposition");
+      downloadBlob(
+        blob,
+        getFilenameFromDisposition(
+          disposition,
+          `planilla-sesiones-${MESES[month]?.toLowerCase()}-${year}.pdf`,
+        ),
+      );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo generar el Excel.");
+      toast.error(e instanceof Error ? e.message : "No se pudo generar la planilla de sesiones.");
     } finally {
-      setExporting(false);
+      setExportingPlanilla(false);
     }
   };
 
@@ -211,15 +237,17 @@ function Index() {
               Tocá un día para cargar un turno
             </p>
           </div>
-          <Button
-            onClick={handleExport}
-            disabled={exporting}
-            size="sm"
-            className="shrink-0 gap-1.5"
-          >
-            <FileSpreadsheet className="size-4" />
-            {exporting ? "Generando..." : "Descargar en Excel"}
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+            <Button
+              onClick={handleExportPlanilla}
+              disabled={exportingPlanilla}
+              size="sm"
+              className="gap-1.5"
+            >
+              <FileText className="size-4" />
+              {exportingPlanilla ? "Generando..." : "Descargar planilla de sesiones"}
+            </Button>
+          </div>
         </header>
 
         <div className="space-y-0 rounded-lg bg-card">
