@@ -76,6 +76,25 @@ export function toKey(d: Date) {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+export function fromKey(key: string): Date {
+  const parts = key.split("-").map(Number);
+  return new Date(parts[0] ?? 0, (parts[1] ?? 1) - 1, parts[2] ?? 1);
+}
+
+export function addDays(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+export function startOfWeek(d: Date): Date {
+  return addDays(d, -d.getDay());
+}
+
+/** Días (Dom→Sáb) de la semana que contiene la fecha. */
+export function weekDays(d: Date): Date[] {
+  const start = startOfWeek(d);
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
 export function formatFechaLarga(key: string) {
   const parts = key.split("-").map(Number);
   const y = parts[0] ?? 0;
@@ -84,6 +103,7 @@ export function formatFechaLarga(key: string) {
   const date = new Date(y, m - 1, d);
   return `${DIAS[date.getDay()]} ${d} de ${MESES[m - 1]} ${y}`;
 }
+
 
 /** Matriz de semanas (6x7) que cubre el mes indicado. */
 export function buildMonthGrid(year: number, month: number): Date[][] {

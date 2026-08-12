@@ -6,13 +6,22 @@ interface Props {
   year: number;
   month: number;
   turnosPorDia: Record<string, Turno[]>;
+  compact?: boolean;
   onDayClick: (key: string) => void;
   onTurnosClick: (key: string) => void;
 }
 
-export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onTurnosClick }: Props) {
+export function CalendarGrid({
+  year,
+  month,
+  turnosPorDia,
+  compact = false,
+  onDayClick,
+  onTurnosClick,
+}: Props) {
   const weeks = buildMonthGrid(year, month);
   const todayKey = toKey(new Date());
+
 
   return (
     <div className="overflow-hidden rounded-b-lg border border-border bg-card">
@@ -43,13 +52,15 @@ export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onTurnosCl
                 if (e.key === "Enter" || e.key === " ") onDayClick(key);
               }}
               className={cn(
-                "flex min-h-[58px] cursor-pointer flex-col items-stretch border-t border-r border-border p-1 text-left transition-colors hover:bg-accent/60 sm:min-h-[84px] sm:p-1.5 [&:nth-child(7n)]:border-r-0",
+                "flex cursor-pointer flex-col items-stretch border-t border-r border-border p-1 text-left transition-colors hover:bg-accent/60 sm:min-h-[84px] sm:p-1.5 [&:nth-child(7n)]:border-r-0",
+                compact ? "min-h-[56px] items-center" : "min-h-[58px]",
                 !inMonth && "bg-muted/40",
               )}
             >
               <span
                 className={cn(
-                  "mb-0.5 self-start rounded px-1 text-[11px] font-semibold tabular-nums sm:text-xs",
+                  "mb-0.5 rounded px-1 text-[11px] font-semibold tabular-nums sm:text-xs",
+                  compact ? "self-center text-sm" : "self-start",
                   !inMonth && "text-muted-foreground/50",
                   key === todayKey && "bg-primary text-primary-foreground",
                 )}
@@ -57,19 +68,25 @@ export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onTurnosCl
                 {date.getDate()}
               </span>
 
-              {turnos.length > 0 && (
-                <div
-                  className="min-w-0 space-y-px"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTurnosClick(key);
-                  }}
-                >
-                  {turnos.map((t) => (
-                    <TurnoLine key={t.id} turno={t} />
-                  ))}
-                </div>
-              )}
+              {turnos.length > 0 &&
+                (compact ? (
+                  <span className="mt-0.5 rounded-full bg-primary/15 px-1.5 text-[10px] font-bold text-primary tabular-nums">
+                    {turnos.length}
+                  </span>
+                ) : (
+                  <div
+                    className="min-w-0 space-y-px"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTurnosClick(key);
+                    }}
+                  >
+                    {turnos.map((t) => (
+                      <TurnoLine key={t.id} turno={t} />
+                    ))}
+                  </div>
+                ))}
+
             </div>
           );
         })}
