@@ -19,7 +19,8 @@ import {
 import { useCreatePatient, usePatients } from "@/hooks/use-patients";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
 import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
-import fondoFloral from "@/assets/fondo-floral.jpg";
+import { PageShell } from "@/components/layout/PageShell";
+import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -223,10 +224,7 @@ function Index() {
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
 
   return (
-    <main
-      className="min-h-screen bg-background bg-cover bg-fixed bg-center bg-no-repeat px-3 py-4 sm:px-6 sm:py-8"
-      style={{ backgroundImage: `url(${fondoFloral})` }}
-    >
+    <PageShell>
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card/85 px-3 py-2.5 shadow-sm backdrop-blur-sm sm:flex sm:justify-between sm:px-4">
           <div className="min-w-0">
@@ -298,15 +296,11 @@ function Index() {
         <div className="flex w-fit items-center gap-2">
           <div className="flex items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
             <span className="flex items-center gap-1.5">
-              <span className="rounded bg-particular px-1.5 py-0.5 font-bold text-particular-foreground">
-                P
-              </span>
+              <CoberturaBadge tipo="particular" label="P" />
               Particular
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="rounded bg-obra-social px-1.5 py-0.5 font-bold text-obra-social-foreground">
-                O.S
-              </span>
+              <CoberturaBadge tipo="obra_social" label="O.S" />
               Obra Social
             </span>
           </div>
@@ -341,6 +335,6 @@ function Index() {
         }}
       />
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} blockDismiss />
-    </main>
+    </PageShell>
   );
 }

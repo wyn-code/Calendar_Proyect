@@ -1,25 +1,23 @@
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Turno } from "@/lib/turnos";
+import { CoberturaBadge } from "./CoberturaBadge";
 
 function Chip({ turno, size }: { turno: Turno; size: "sm" | "lg" }) {
   const esParticular = turno.tipo === "particular";
   const etiqueta = esParticular ? "P" : turno.obraSocial?.trim() || "O.S";
 
   const chip = (
-    <span
+    <CoberturaBadge
+      tipo={turno.tipo}
+      label={etiqueta}
       className={cn(
-        "shrink min-w-0 rounded px-1 font-bold",
+        "shrink min-w-0",
         size === "sm"
-          ? "max-w-[5.5rem] truncate text-[9px] leading-4"
+          ? "max-w-[5.5rem] truncate px-1 text-[9px] leading-4"
           : "max-w-[9rem] truncate px-1.5 py-0.5 text-[11px]",
-        esParticular
-          ? "bg-particular text-particular-foreground"
-          : "bg-obra-social text-obra-social-foreground",
       )}
-    >
-      {etiqueta}
-    </span>
+    />
   );
 
   if (esParticular || !turno.obraSocial?.trim()) return chip;
@@ -43,16 +41,11 @@ export function TurnoLine({ turno, size = "sm" }: { turno: Turno; size?: "sm" | 
       <div className="min-w-0 break-words border-b border-border/50 px-1 py-1 text-[10px] leading-snug last:border-b-0 sm:text-xs">
         <div className="font-semibold tabular-nums">{turno.hora}</div>
         <div className="break-words">{turno.nombre}</div>
-        <div
-          className={cn(
-            "mt-0.5 w-fit max-w-full break-words whitespace-normal rounded px-1 py-px text-[9px] font-bold leading-[1.2]",
-            esParticular
-              ? "bg-particular text-particular-foreground"
-              : "bg-obra-social text-obra-social-foreground",
-          )}
-        >
-          {cobertura}
-        </div>
+        <CoberturaBadge
+          tipo={turno.tipo}
+          label={cobertura}
+          className="mt-0.5 w-fit max-w-full break-words whitespace-normal px-1 py-px text-[9px] leading-[1.2]"
+        />
       </div>
     );
   }

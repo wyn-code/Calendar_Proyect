@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/table";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
 import { usePatients } from "@/hooks/use-patients";
-import fondoFloral from "@/assets/fondo-floral.jpg";
+import { PageShell } from "@/components/layout/PageShell";
+import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 
 export const Route = createFileRoute("/pacientes")({
   head: () => ({
@@ -42,10 +43,7 @@ function Pacientes() {
   );
 
   return (
-    <main
-      className="min-h-screen bg-background bg-cover bg-fixed bg-center bg-no-repeat px-3 py-4 sm:px-6 sm:py-8"
-      style={{ backgroundImage: `url(${fondoFloral})` }}
-    >
+    <PageShell>
       <div className="mx-auto w-full max-w-4xl space-y-4">
         <header className="flex items-center justify-between gap-3 rounded-lg bg-card/85 px-4 py-2.5 shadow-sm backdrop-blur-sm">
           <div className="min-w-0">
@@ -102,9 +100,7 @@ function Pacientes() {
                       </TableCell>
                       <TableCell>
                         {obraSocial ? (
-                          <span className="rounded bg-obra-social px-1.5 py-0.5 font-bold text-obra-social-foreground">
-                            {obraSocial}
-                          </span>
+                          <CoberturaBadge tipo="obra_social" label={obraSocial} />
                         ) : (
                           <span className="text-muted-foreground">Sin obra social</span>
                         )}
@@ -120,6 +116,6 @@ function Pacientes() {
           </Table>
         </div>
       </div>
-    </main>
+    </PageShell>
   );
 }
