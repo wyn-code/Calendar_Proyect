@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
@@ -18,9 +18,27 @@ import {
 } from "@/hooks/use-appointments";
 import { useCreatePatient, usePatients } from "@/hooks/use-patients";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
-import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
+import {
+  MESES,
+  appointmentsToTurnos,
+  toKey,
+  fromKey,
+  addDays,
+  weekDays,
+  formatFechaLarga,
+  type TipoConsulta,
+  type Turno,
+} from "@/lib/turnos";
 import { PageShell } from "@/components/layout/PageShell";
 import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
+import { ViewSwitcher, type Vista } from "@/components/turnos/ViewSwitcher";
+import { CalendarHeader } from "@/components/turnos/CalendarHeader";
+import { DayAgenda } from "@/components/turnos/DayAgenda";
+import { WeekStrip } from "@/components/turnos/WeekStrip";
+import { TurnoSheet } from "@/components/turnos/TurnoSheet";
+import { AddTurnoFab } from "@/components/turnos/AddTurnoFab";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useSwipe } from "@/hooks/use-swipe";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,14 +61,20 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
+  const [selected, setSelected] = useState(() => toKey(today));
+  const [vista, setVista] = useState<Vista>("mes");
   const [formFecha, setFormFecha] = useState<string | null>(null);
   const [detalleFecha, setDetalleFecha] = useState<string | null>(null);
+  const [turnoSheet, setTurnoSheet] = useState<Turno | null>(null);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [exportingPlanilla, setExportingPlanilla] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const isMobile = useIsMobile();
+
+  const selectedDate = fromKey(selected);
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth();
 
   useEffect(() => {
     setMounted(true);
@@ -59,6 +83,11 @@ function Index() {
   useEffect(() => {
     if (mounted && !getSession()) setLoginOpen(true);
   }, [mounted]);
+
+  // Vista por defecto: día en mobile, mes en desktop.
+  useEffect(() => {
+    setVista(isMobile ? "dia" : "mes");
+  }, [isMobile]);
 
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
@@ -86,9 +115,30 @@ function Index() {
 
   const shiftMonth = (delta: number) => {
     const d = new Date(year, month + delta, 1);
-    setYear(d.getFullYear());
-    setMonth(d.getMonth());
+    setSelected(toKey(d));
   };
+
+  const navigate = (delta: number) => {
+    if (vista === "mes") shiftMonth(delta);
+    else setSelected(toKey(addDays(selectedDate, vista === "semana" ? delta * 7 : delta)));
+  };
+
+  const swipe = useSwipe(
+    () => navigate(1),
+    () => navigate(-1),
+  );
+
+  const headerLabel =
+    vista === "mes"
+      ? `${MESES[month]} ${year}`
+      : vista === "semana"
+        ? (() => {
+            const days = weekDays(selectedDate);
+            const a = days[0]!;
+            const b = days[6]!;
+            return `${a.getDate()} – ${b.getDate()} ${MESES[b.getMonth()]}`;
+          })()
+        : formatFechaLarga(selected);
 
   const handleSave = async (data: {
     id?: number;
@@ -164,6 +214,7 @@ function Index() {
   const handleDelete = async (id: number) => {
     try {
       await deleteAppointment.mutateAsync(id);
+      setTurnoSheet(null);
       toast.success("Turno eliminado");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo eliminar el turno.");
@@ -222,10 +273,11 @@ function Index() {
   };
 
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
+  const turnosDelDia = turnosPorDia[selected] ?? [];
 
   return (
     <PageShell>
-      <div className="mx-auto w-full max-w-5xl space-y-4">
+      <div className="mx-auto w-full max-w-5xl space-y-4 pb-24 md:pb-4">
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card/85 px-3 py-2.5 shadow-sm backdrop-blur-sm sm:flex sm:justify-between sm:px-4">
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold tracking-tight sm:text-2xl">
@@ -240,60 +292,99 @@ function Index() {
               onClick={handleExportPlanilla}
               disabled={exportingPlanilla}
               size="sm"
-              className="gap-1.5"
+              className="min-h-10 gap-1.5"
             >
               <FileText className="size-4" />
-              {exportingPlanilla ? "Generando..." : "Descargar planilla de sesiones"}
+              <span className="hidden sm:inline">
+                {exportingPlanilla ? "Generando..." : "Descargar planilla de sesiones"}
+              </span>
+              <span className="sm:hidden">{exportingPlanilla ? "..." : "Planilla"}</span>
             </Button>
           </div>
         </header>
 
-        <div className="space-y-0 rounded-lg bg-card">
-          <div className="flex items-center justify-between rounded-t-lg bg-primary px-3 py-2.5 text-primary-foreground">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Mes anterior"
-              onClick={() => shiftMonth(-1)}
-              className="size-8 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-            >
-              <ChevronLeft className="size-5" />
-            </Button>
-            <h2 className="truncate text-sm font-bold tracking-wide uppercase sm:text-base">
-              {MESES[month]} {year}
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Mes siguiente"
-              onClick={() => shiftMonth(1)}
-              className="size-8 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-            >
-              <ChevronRight className="size-5" />
-            </Button>
-          </div>
-
-          {isLoading && (
-            <div className="border-b border-border bg-card px-3 py-1.5 text-xs text-muted-foreground">
-              Cargando turnos…
-            </div>
-          )}
-          {!isLoading && error && (
-            <div className="border-b border-border bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-              No se pudieron cargar los turnos del servidor.
-            </div>
-          )}
-
-          <CalendarGrid
-            year={year}
-            month={month}
-            turnosPorDia={turnosPorDia}
-            onDayClick={(key) => setFormFecha(key)}
-            onTurnosClick={(key: string) => setDetalleFecha(key)}
+        <div className="sticky top-0 z-30 space-y-2 rounded-lg bg-card/95 p-2 shadow-sm backdrop-blur-md">
+          <CalendarHeader
+            label={headerLabel}
+            selected={selected}
+            onPrev={() => navigate(-1)}
+            onNext={() => navigate(1)}
+            onToday={() => setSelected(toKey(new Date()))}
+            onPick={(key) => setSelected(key)}
           />
+          <ViewSwitcher value={vista} onChange={setVista} />
         </div>
 
-        <div className="flex w-fit items-center gap-2">
+        {isLoading && (
+          <div className="rounded-lg bg-card/85 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
+            Cargando turnos…
+          </div>
+        )}
+        {!isLoading && error && (
+          <div className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+            No se pudieron cargar los turnos del servidor.
+          </div>
+        )}
+
+        <div
+          key={vista}
+          className="animate-in fade-in-0 space-y-3 duration-300"
+          onPointerDown={swipe.onPointerDown}
+          onPointerUp={swipe.onPointerUp}
+        >
+          {vista === "dia" && (
+            <DayAgenda
+              turnos={turnosDelDia}
+              onSelect={(t) => setTurnoSheet(t)}
+              onAdd={() => setFormFecha(selected)}
+            />
+          )}
+
+          {vista === "semana" && (
+            <>
+              <WeekStrip
+                days={weekDays(selectedDate)}
+                selected={selected}
+                turnosPorDia={turnosPorDia}
+                onSelect={setSelected}
+              />
+              <DayAgenda
+                turnos={turnosDelDia}
+                onSelect={(t) => setTurnoSheet(t)}
+                onAdd={() => setFormFecha(selected)}
+              />
+            </>
+          )}
+
+          {vista === "mes" && (
+            <div className="overflow-hidden rounded-lg bg-card">
+              <CalendarGrid
+                year={year}
+                month={month}
+                turnosPorDia={turnosPorDia}
+                compact={isMobile}
+                onDayClick={(key) => {
+                  if (isMobile) {
+                    setSelected(key);
+                    setVista("dia");
+                  } else {
+                    setFormFecha(key);
+                  }
+                }}
+                onTurnosClick={(key: string) => {
+                  if (isMobile) {
+                    setSelected(key);
+                    setVista("dia");
+                  } else {
+                    setDetalleFecha(key);
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex w-fit flex-wrap items-center gap-2">
           <div className="flex items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
             <span className="flex items-center gap-1.5">
               <CoberturaBadge tipo="particular" label="P" />
@@ -310,6 +401,8 @@ function Index() {
         </div>
       </div>
 
+      <AddTurnoFab onClick={() => setFormFecha(selected)} />
+
       <TurnoDialog
         fecha={formFecha}
         turno={editingTurno}
@@ -318,6 +411,15 @@ function Index() {
           setEditingTurno(null);
         }}
         onSave={handleSave}
+      />
+      <TurnoSheet
+        turno={turnoSheet}
+        onClose={() => setTurnoSheet(null)}
+        onEdit={(t) => {
+          setTurnoSheet(null);
+          setEditingTurno(t);
+        }}
+        onDelete={handleDelete}
       />
       <DayDetailDialog
         fecha={detalleFecha}

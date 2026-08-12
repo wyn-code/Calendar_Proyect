@@ -6,13 +6,22 @@ interface Props {
   year: number;
   month: number;
   turnosPorDia: Record<string, Turno[]>;
+  compact?: boolean;
   onDayClick: (key: string) => void;
   onTurnosClick: (key: string) => void;
 }
 
-export function CalendarGrid({ year, month, turnosPorDia, onDayClick, onTurnosClick }: Props) {
+export function CalendarGrid({
+  year,
+  month,
+  turnosPorDia,
+  compact = false,
+  onDayClick,
+  onTurnosClick,
+}: Props) {
   const weeks = buildMonthGrid(year, month);
   const todayKey = toKey(new Date());
+
 
   return (
     <div className="overflow-hidden rounded-b-lg border border-border bg-card">
