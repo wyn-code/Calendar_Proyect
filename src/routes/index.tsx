@@ -303,86 +303,49 @@ function Index() {
           </div>
         </header>
 
-        <div className="sticky top-0 z-30 space-y-2 rounded-lg bg-card/95 p-2 shadow-sm backdrop-blur-md">
-          <CalendarHeader
-            label={headerLabel}
-            selected={selected}
-            onPrev={() => navigate(-1)}
-            onNext={() => navigate(1)}
-            onToday={() => setSelected(toKey(new Date()))}
-            onPick={(key) => setSelected(key)}
-          />
-          <ViewSwitcher value={vista} onChange={setVista} />
-        </div>
-
-        {isLoading && (
-          <div className="rounded-lg bg-card/85 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
-            Cargando turnos…
+        <div className="overflow-hidden rounded-lg bg-card shadow-sm">
+          <div className="flex items-center justify-between gap-2 bg-primary px-3 py-2 text-primary-foreground">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes anterior"
+              onClick={() => shiftMonth(-1)}
+              className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+            >
+              <ChevronLeft className="size-5" />
+            </Button>
+            <span className="text-sm font-bold tracking-wide uppercase sm:text-base">
+              {MESES[month]} {year}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes siguiente"
+              onClick={() => shiftMonth(1)}
+              className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+            >
+              <ChevronRight className="size-5" />
+            </Button>
           </div>
-        )}
-        {!isLoading && error && (
-          <div className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-            No se pudieron cargar los turnos del servidor.
-          </div>
-        )}
 
-        <div
-          key={vista}
-          className="animate-in fade-in-0 space-y-3 duration-300"
-          onPointerDown={swipe.onPointerDown}
-          onPointerUp={swipe.onPointerUp}
-        >
-          {vista === "dia" && (
-            <DayAgenda
-              turnos={turnosDelDia}
-              onSelect={(t) => setTurnoSheet(t)}
-              onAdd={() => setFormFecha(selected)}
-            />
+          {isLoading && (
+            <div className="px-3 py-1.5 text-xs text-muted-foreground">Cargando turnos…</div>
           )}
-
-          {vista === "semana" && (
-            <>
-              <WeekStrip
-                days={weekDays(selectedDate)}
-                selected={selected}
-                turnosPorDia={turnosPorDia}
-                onSelect={setSelected}
-              />
-              <DayAgenda
-                turnos={turnosDelDia}
-                onSelect={(t) => setTurnoSheet(t)}
-                onAdd={() => setFormFecha(selected)}
-              />
-            </>
-          )}
-
-          {vista === "mes" && (
-            <div className="overflow-hidden rounded-lg bg-card">
-              <CalendarGrid
-                year={year}
-                month={month}
-                turnosPorDia={turnosPorDia}
-                compact={isMobile}
-                onDayClick={(key) => {
-                  if (isMobile) {
-                    setSelected(key);
-                    setVista("dia");
-                  } else {
-                    setFormFecha(key);
-                  }
-                }}
-                onTurnosClick={(key: string) => {
-                  if (isMobile) {
-                    setSelected(key);
-                    setVista("dia");
-                  } else {
-                    setDetalleFecha(key);
-                  }
-                }}
-              />
+          {!isLoading && error && (
+            <div className="bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              No se pudieron cargar los turnos del servidor.
             </div>
           )}
+
+          <CalendarGrid
+            year={year}
+            month={month}
+            turnosPorDia={turnosPorDia}
+            onDayClick={(key) => setFormFecha(key)}
+            onTurnosClick={(key) => setDetalleFecha(key)}
+          />
         </div>
+
 
         <div className="flex w-fit flex-wrap items-center gap-2">
           <div className="flex items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
