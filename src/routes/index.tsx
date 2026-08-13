@@ -208,7 +208,7 @@ function Index() {
   const handleDelete = async (id: number) => {
     try {
       await deleteAppointment.mutateAsync(id);
-      setTurnoSheet(null);
+      setDetalleFecha(null);
       sileo.success({ title: "Turno eliminado", description: "El turno se quitó de la agenda." });
     } catch (e) {
       sileo.error({
