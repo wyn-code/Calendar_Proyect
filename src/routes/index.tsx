@@ -273,7 +273,7 @@ function Index() {
   };
 
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
-  const turnosDelDia = turnosPorDia[selected] ?? [];
+  
 
   return (
     <PageShell>
