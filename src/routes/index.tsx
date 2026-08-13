@@ -46,20 +46,14 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const today = new Date();
-  const [selected, setSelected] = useState(() => toKey(today));
-  const [vista, setVista] = useState<Vista>("mes");
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
   const [formFecha, setFormFecha] = useState<string | null>(null);
   const [detalleFecha, setDetalleFecha] = useState<string | null>(null);
-  const [turnoSheet, setTurnoSheet] = useState<Turno | null>(null);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [exportingPlanilla, setExportingPlanilla] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const isMobile = useIsMobile();
-
-  const selectedDate = fromKey(selected);
-  const year = selectedDate.getFullYear();
-  const month = selectedDate.getMonth();
 
   useEffect(() => {
     setMounted(true);
@@ -68,11 +62,6 @@ function Index() {
   useEffect(() => {
     if (mounted && !getSession()) setLoginOpen(true);
   }, [mounted]);
-
-  // Vista por defecto: día en mobile, mes en desktop.
-  useEffect(() => {
-    setVista(isMobile ? "dia" : "mes");
-  }, [isMobile]);
 
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
@@ -101,30 +90,10 @@ function Index() {
 
   const shiftMonth = (delta: number) => {
     const d = new Date(year, month + delta, 1);
-    setSelected(toKey(d));
+    setYear(d.getFullYear());
+    setMonth(d.getMonth());
   };
 
-  const navigate = (delta: number) => {
-    if (vista === "mes") shiftMonth(delta);
-    else setSelected(toKey(addDays(selectedDate, vista === "semana" ? delta * 7 : delta)));
-  };
-
-  const swipe = useSwipe(
-    () => navigate(1),
-    () => navigate(-1),
-  );
-
-  const headerLabel =
-    vista === "mes"
-      ? `${MESES[month]} ${year}`
-      : vista === "semana"
-        ? (() => {
-            const days = weekDays(selectedDate);
-            const a = days[0]!;
-            const b = days[6]!;
-            return `${a.getDate()} – ${b.getDate()} ${MESES[b.getMonth()]}`;
-          })()
-        : formatFechaLarga(selected);
 
   const handleSave = async (data: {
     id?: number;
