@@ -246,7 +246,7 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
               }
               disabled={!esEdicion && !consultorio}
               pacientes={pacientesVisibles}
-              error={mostrarError("nombre") ? true : undefined}
+              error={!!mostrarError("nombre")}
               onChange={(v) => {
                 setNombreTexto(v);
                 setSelectedPatientId(null);
@@ -305,7 +305,7 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
                 value={obraSocial}
                 onChange={setObraSocial}
                 options={obraSocialOptions}
-                error={mostrarError("obraSocial") ? true : undefined}
+                error={!!mostrarError("obraSocial")}
               />
               {mostrarError("obraSocial") && (
                 <p className="text-xs text-destructive">{errores.obraSocial}</p>
