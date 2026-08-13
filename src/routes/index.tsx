@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useEffect, useState } from "react";
 import { FileText } from "lucide-react";
-import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { sileo } from "sileo";
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
@@ -31,7 +29,6 @@ import {
   type TipoConsulta,
   type Turno,
 } from "@/lib/turnos";
-import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
 import { normalizeNombre } from "@/lib/normalize";
 import type { Consultorio } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
@@ -158,8 +155,28 @@ function Index() {
     observacion?: string;
   }) => {
     try {
+      // Validación de campos obligatorios. Único campo opcional: "observacion".
+      if (!data.fecha) {
+        throw new Error("La fecha es obligatoria.");
+      }
+      if (!data.hora?.trim()) {
+        throw new Error("El horario de inicio es obligatorio.");
+      }
+      if (!data.consultorio) {
+        throw new Error("Seleccioná un consultorio.");
+      }
+      if (!data.nombre?.trim()) {
+        throw new Error("El nombre y apellido son obligatorios.");
+      }
+      if (!data.tipo) {
+        throw new Error("Seleccioná el tipo de consulta.");
+      }
+      if (data.tipo === "obra_social" && !data.obraSocial?.trim()) {
+        throw new Error("Seleccioná una obra social.");
+      }
+
       const nombre = data.nombre.trim();
-      const consultorio = data.consultorio ?? "Neurovital";
+      const consultorio = data.consultorio;
       let patientId: number | null = data.patientId ?? null;
 
       if (patientId == null) {
@@ -173,9 +190,6 @@ function Index() {
 
       let obraSocialId: number | null = null;
       if (data.tipo === "obra_social") {
-        if (!data.obraSocial) {
-          throw new Error("Seleccioná una obra social.");
-        }
         const found = obrasSociales.find(
           (o) => o.nombre.trim().toLowerCase() === data.obraSocial!.trim().toLowerCase(),
         );
@@ -194,7 +208,12 @@ function Index() {
       };
 
       if (data.id != null) {
-        if (patientId != null && consultorio) {
+        // Modo edición: si cambió el consultorio del paciente, se actualiza en el
+        // paciente (no en el turno). El cambio es retroactivo: todos los turnos
+        // pasados de ese paciente se reclasifican bajo el nuevo consultorio en
+        // las planillas exportadas, ya que el filtro de exportación se basa en
+        // el consultorio actual del paciente.
+        if (patientId != null) {
           const pacienteActual = patients.find((p) => p.id === patientId);
           if (pacienteActual && pacienteActual.consultorio !== consultorio) {
             await updatePatient.mutateAsync({ id: patientId, data: { consultorio } });
@@ -238,7 +257,6 @@ function Index() {
     try {
       await deleteAppointment.mutateAsync(id);
       setTurnoSheet(null);
-      toast.success("Turno eliminado");
       sileo.success({ title: "Turno eliminado", description: "El turno se quitó de la agenda." });
     } catch (e) {
       sileo.error({
