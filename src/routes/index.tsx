@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useEffect, useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { sileo } from "sileo";
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
@@ -18,29 +18,12 @@ import {
 } from "@/hooks/use-appointments";
 import { useCreatePatient, usePatients, useUpdatePatient } from "@/hooks/use-patients";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
-import {
-  MESES,
-  appointmentsToTurnos,
-  toKey,
-  fromKey,
-  addDays,
-  weekDays,
-  formatFechaLarga,
-  type TipoConsulta,
-  type Turno,
-} from "@/lib/turnos";
+import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
 import { normalizeNombre } from "@/lib/normalize";
 import type { Consultorio } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
-import { ViewSwitcher, type Vista } from "@/components/turnos/ViewSwitcher";
-import { CalendarHeader } from "@/components/turnos/CalendarHeader";
-import { DayAgenda } from "@/components/turnos/DayAgenda";
-import { WeekStrip } from "@/components/turnos/WeekStrip";
-import { TurnoSheet } from "@/components/turnos/TurnoSheet";
-import { AddTurnoFab } from "@/components/turnos/AddTurnoFab";
-import { useIsMobile } from "@/hooks/use-is-mobile";
-import { useSwipe } from "@/hooks/use-swipe";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
