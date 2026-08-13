@@ -401,8 +401,6 @@ function Index() {
         </div>
       </div>
 
-      <AddTurnoFab onClick={() => setFormFecha(selected)} />
-
       <TurnoDialog
         fecha={formFecha}
         turno={editingTurno}
@@ -412,15 +410,7 @@ function Index() {
         }}
         onSave={handleSave}
       />
-      <TurnoSheet
-        turno={turnoSheet}
-        onClose={() => setTurnoSheet(null)}
-        onEdit={(t) => {
-          setTurnoSheet(null);
-          setEditingTurno(t);
-        }}
-        onDelete={handleDelete}
-      />
+
       <DayDetailDialog
         fecha={detalleFecha}
         turnos={detalleTurnos}
