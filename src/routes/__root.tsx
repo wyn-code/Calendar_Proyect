@@ -11,7 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "sileo";
 
 function NotFoundComponent() {
   return (
@@ -128,7 +128,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-      <Toaster />
+      <Toaster position="bottom-right" theme="light" options={{ duration: 4000 }} />
     </QueryClientProvider>
   );
 }

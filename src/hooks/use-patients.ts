@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, type Patient, type PatientCreate } from "@/lib/api";
+import { api, type Patient, type PatientCreate, type PatientUpdate } from "@/lib/api";
 
 export function usePatients() {
   return useQuery({
@@ -9,19 +9,19 @@ export function usePatients() {
   });
 }
 
-export function usePatientSearch(search: string, enabled: boolean) {
-  const trimmed = search.trim();
-  return useQuery({
-    queryKey: ["patients", "search", trimmed],
-    queryFn: () => api.get<Patient[]>(`/patients/?search=${encodeURIComponent(trimmed)}`),
-    enabled: enabled && trimmed.length >= 2,
-  });
-}
-
 export function useCreatePatient() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: PatientCreate) => api.post<Patient>("/patients/", data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patients"] }),
+  });
+}
+
+export function useUpdatePatient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: PatientUpdate }) =>
+      api.put<Patient>(`/patients/${id}`, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patients"] }),
   });
 }

@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { sileo } from "sileo";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ export function LoginModal({ open, onClose, blockDismiss = false }: LoginModalPr
     setError(null);
     try {
       const session = await login(email.trim(), password, keepSession);
-      toast.success(`Hola, ${session.user.nombre}`);
+      sileo.success({ title: "Sesión iniciada", description: `¡Hola, ${session.user.nombre}!` });
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar sesión.";

@@ -14,22 +14,35 @@ import {
 import { OBRAS_SOCIALES } from "@/lib/turnos";
 
 interface Props {
+  triggerId?: string;
   value: string;
   onChange: (value: string) => void;
   options?: string[];
+  error?: boolean;
 }
 
-export function ObraSocialCombobox({ value, onChange, options = OBRAS_SOCIALES }: Props) {
+export function ObraSocialCombobox({
+  triggerId,
+  value,
+  onChange,
+  options = OBRAS_SOCIALES,
+  error = false,
+}: Props) {
   const [open, setOpen] = useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={triggerId}
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between font-normal"
+          aria-invalid={error ? true : undefined}
+          className={cn(
+            "w-full justify-between font-normal",
+            error && "border-destructive focus-visible:ring-destructive",
+          )}
         >
           {value || <span className="text-muted-foreground">Seleccioná una obra social</span>}
           <ChevronsUpDown className="size-4 opacity-50" />

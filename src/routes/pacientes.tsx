@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Users } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowLeft, Pencil, Users } from "lucide-react";
+import { useMemo, useState } from "react";
+import { sileo } from "sileo";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -11,9 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
-import { usePatients } from "@/hooks/use-patients";
+import { usePatients, useUpdatePatient } from "@/hooks/use-patients";
 import { PageShell } from "@/components/layout/PageShell";
 import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
+import { PatientEditDialog } from "@/components/pacientes/PatientEditDialog";
+import type { Patient } from "@/lib/api";
 
 export const Route = createFileRoute("/pacientes")({
   head: () => ({
@@ -31,6 +34,8 @@ export const Route = createFileRoute("/pacientes")({
 function Pacientes() {
   const { data: patients = [], isLoading } = usePatients();
   const { data: obrasSociales = [] } = useObraSociales();
+  const updatePatient = useUpdatePatient();
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
 
   const obraSocialPorId = useMemo(
     () => new Map(obrasSociales.map((o) => [o.id, o.nombre])),
@@ -41,6 +46,23 @@ function Pacientes() {
     () => [...patients].sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo, "es")),
     [patients],
   );
+
+  const handleSave = async (data: Parameters<typeof updatePatient.mutateAsync>[0]["data"]) => {
+    if (!editingPatient) return;
+    try {
+      await updatePatient.mutateAsync({ id: editingPatient.id, data });
+      sileo.success({
+        title: "Paciente actualizado",
+        description: "Los datos del paciente se guardaron.",
+      });
+      setEditingPatient(null);
+    } catch (e) {
+      sileo.error({
+        title: "No se pudo actualizar",
+        description: e instanceof Error ? e.message : "Revisá los datos e intentá de nuevo.",
+      });
+    }
+  };
 
   return (
     <PageShell>
@@ -70,21 +92,23 @@ function Pacientes() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
+                <TableHead>Consultorio</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Obra social</TableHead>
                 <TableHead>Observaciones</TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
                     Cargando pacientes…
                   </TableCell>
                 </TableRow>
               ) : pacientesOrdenados.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
                     No hay pacientes cargados.
                   </TableCell>
                 </TableRow>
@@ -95,6 +119,11 @@ function Pacientes() {
                   return (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.nombre_completo}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs font-medium">
+                          {p.consultorio}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {p.telefono?.trim() ? p.telefono : "-"}
                       </TableCell>
@@ -108,6 +137,17 @@ function Pacientes() {
                       <TableCell className="max-w-[220px] truncate text-muted-foreground">
                         {p.observaciones?.trim() ? p.observaciones : "-"}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground"
+                          aria-label={`Editar a ${p.nombre_completo}`}
+                          onClick={() => setEditingPatient(p)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -116,6 +156,13 @@ function Pacientes() {
           </Table>
         </div>
       </div>
+
+      <PatientEditDialog
+        patient={editingPatient}
+        obrasSociales={obrasSociales}
+        onClose={() => setEditingPatient(null)}
+        onSave={handleSave}
+      />
     </PageShell>
   );
 }

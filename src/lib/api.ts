@@ -1,5 +1,7 @@
 import { API_V1_PREFIX, getApiBaseUrl } from "./config";
 
+export type Consultorio = "Neurovital" | "Infancias";
+
 export interface ObraSocial {
   id: number;
   nombre: string;
@@ -11,6 +13,7 @@ export interface Patient {
   telefono: string | null;
   obra_social_id: number | null;
   observaciones: string | null;
+  consultorio: Consultorio;
 }
 
 export interface PatientCreate {
@@ -18,6 +21,15 @@ export interface PatientCreate {
   telefono: string | null;
   obra_social_id: number | null;
   observaciones: string | null;
+  consultorio: Consultorio;
+}
+
+export interface PatientUpdate {
+  nombre_completo?: string;
+  telefono?: string | null;
+  obra_social_id?: number | null;
+  observaciones?: string | null;
+  consultorio?: Consultorio;
 }
 
 export interface Appointment {
@@ -67,6 +79,11 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     let message = `HTTP ${response.status}`;
     if (typeof detail === "string") {
       message = detail;
+    } else if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+      message =
+        typeof (detail as { message?: unknown }).message === "string"
+          ? (detail as { message: string }).message
+          : message;
     } else if (Array.isArray(detail)) {
       message = detail
         .map((d: { msg?: unknown }) => (typeof d?.msg === "string" ? d.msg : ""))

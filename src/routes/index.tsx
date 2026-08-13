@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
+import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { sileo } from "sileo";
 import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
@@ -16,7 +18,7 @@ import {
   useDeleteAppointment,
   useUpdateAppointment,
 } from "@/hooks/use-appointments";
-import { useCreatePatient, usePatients } from "@/hooks/use-patients";
+import { useCreatePatient, usePatients, useUpdatePatient } from "@/hooks/use-patients";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
 import {
   MESES,
@@ -29,6 +31,9 @@ import {
   type TipoConsulta,
   type Turno,
 } from "@/lib/turnos";
+import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
+import { normalizeNombre } from "@/lib/normalize";
+import type { Consultorio } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 import { ViewSwitcher, type Vista } from "@/components/turnos/ViewSwitcher";
@@ -96,6 +101,7 @@ function Index() {
   const updateAppointment = useUpdateAppointment();
   const deleteAppointment = useDeleteAppointment();
   const createPatient = useCreatePatient();
+  const updatePatient = useUpdatePatient();
 
   const turnos = useMemo(
     () => appointmentsToTurnos(appointments, patients, obrasSociales),
@@ -146,17 +152,21 @@ function Index() {
     hora: string;
     nombre: string;
     patientId?: number | null;
+    consultorio?: Consultorio | null;
     tipo: TipoConsulta;
     obraSocial?: string;
     observacion?: string;
   }) => {
     try {
       const nombre = data.nombre.trim();
+      const consultorio = data.consultorio ?? "Neurovital";
       let patientId: number | null = data.patientId ?? null;
 
       if (patientId == null) {
         const match = patients.find(
-          (p) => p.nombre_completo.trim().toLowerCase() === nombre.toLowerCase(),
+          (p) =>
+            p.consultorio === consultorio &&
+            normalizeNombre(p.nombre_completo) === normalizeNombre(nombre),
         );
         if (match) patientId = match.id;
       }
@@ -184,12 +194,21 @@ function Index() {
       };
 
       if (data.id != null) {
+        if (patientId != null && consultorio) {
+          const pacienteActual = patients.find((p) => p.id === patientId);
+          if (pacienteActual && pacienteActual.consultorio !== consultorio) {
+            await updatePatient.mutateAsync({ id: patientId, data: { consultorio } });
+          }
+        }
         await updateAppointment.mutateAsync({
           id: data.id,
           ...base,
           ...(patientId != null ? { patient_id: patientId } : { nombre_completo: nombre }),
         });
-        toast.success("Turno actualizado");
+        sileo.success({
+          title: "Turno actualizado",
+          description: "Los cambios se guardaron correctamente.",
+        });
       } else {
         if (patientId == null) {
           const created = await createPatient.mutateAsync({
@@ -197,17 +216,21 @@ function Index() {
             telefono: null,
             obra_social_id: null,
             observaciones: null,
+            consultorio,
           });
           patientId = created.id;
         }
         await createAppointment.mutateAsync({ ...base, patient_id: patientId });
-        toast.success("Turno guardado");
+        sileo.success({ title: "Turno guardado", description: "El turno se cargó en la agenda." });
       }
 
       setFormFecha(null);
       setEditingTurno(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo guardar el turno.");
+      sileo.error({
+        title: "No se pudo guardar",
+        description: e instanceof Error ? e.message : "Revisá los datos e intentá de nuevo.",
+      });
     }
   };
 
@@ -216,8 +239,12 @@ function Index() {
       await deleteAppointment.mutateAsync(id);
       setTurnoSheet(null);
       toast.success("Turno eliminado");
+      sileo.success({ title: "Turno eliminado", description: "El turno se quitó de la agenda." });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo eliminar el turno.");
+      sileo.error({
+        title: "No se pudo eliminar",
+        description: e instanceof Error ? e.message : "Revisá los datos e intentá de nuevo.",
+      });
     }
   };
 
@@ -266,7 +293,10 @@ function Index() {
         ),
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo generar la planilla de sesiones.");
+      sileo.error({
+        title: "No se pudo generar",
+        description: e instanceof Error ? e.message : "Revisá la conexión e intentá de nuevo.",
+      });
     } finally {
       setExportingPlanilla(false);
     }
