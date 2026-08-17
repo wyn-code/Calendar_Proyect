@@ -8,6 +8,7 @@ import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { UserMenu } from "@/components/turnos/UserMenu";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { TotalBadge } from "@/components/turnos/TotalBadge";
 import { getSession, getToken } from "@/lib/auth";
 import { API_V1_PREFIX, getApiBaseUrl } from "@/lib/config";
 import {
@@ -26,6 +27,7 @@ import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 
 
 export const Route = createFileRoute("/")({
+
   head: () => ({
     meta: [
       { title: "Agenda de Turnos | Calendario mensual" },
@@ -304,29 +306,39 @@ function Index() {
         </header>
 
         <div className="overflow-hidden rounded-lg bg-card shadow-sm">
-          <div className="flex items-center justify-between gap-2 bg-primary px-3 py-2 text-primary-foreground">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Mes anterior"
-              onClick={() => shiftMonth(-1)}
-              className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-            >
-              <ChevronLeft className="size-5" />
-            </Button>
-            <span className="text-sm font-bold tracking-wide uppercase sm:text-base">
-              {MESES[month]} {year}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Mes siguiente"
-              onClick={() => shiftMonth(1)}
-              className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-            >
-              <ChevronRight className="size-5" />
-            </Button>
+          <div className="flex items-center justify-between gap-1 bg-primary px-2 py-2 text-primary-foreground sm:gap-2 sm:px-3">
+            <div className="flex flex-1 items-center justify-start">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Mes anterior"
+                onClick={() => shiftMonth(-1)}
+                className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+              >
+                <ChevronLeft className="size-5" />
+              </Button>
+            </div>
+
+            <div className="flex flex-col flex-wrap items-center justify-center gap-1 sm:flex-row sm:items-center sm:gap-2">
+              <span className="text-sm font-bold tracking-wide uppercase sm:text-base">
+                {MESES[month]} {year}
+              </span>
+              <TotalBadge value="$0" />
+            </div>
+
+            <div className="flex flex-1 items-center justify-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Mes siguiente"
+                onClick={() => shiftMonth(1)}
+                className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+              >
+                <ChevronRight className="size-5" />
+              </Button>
+            </div>
           </div>
+
 
           {isLoading && (
             <div className="px-3 py-1.5 text-xs text-muted-foreground">Cargando turnos…</div>
