@@ -306,8 +306,8 @@ function Index() {
         </header>
 
         <div className="overflow-hidden rounded-lg bg-card shadow-sm">
-          <div className="flex items-center justify-between gap-1 bg-primary px-2 py-2 text-primary-foreground sm:gap-2 sm:px-3">
-            <div className="flex flex-1 items-center justify-start">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-primary px-2 py-2 text-primary-foreground sm:px-3">
+            <div className="flex items-center justify-start">
               <Button
                 variant="ghost"
                 size="icon"
@@ -319,23 +319,25 @@ function Index() {
               </Button>
             </div>
 
-            <div className="flex flex-col flex-wrap items-center justify-center gap-1 sm:flex-row sm:items-center sm:gap-2">
+            <div className="text-center">
               <span className="text-sm font-bold tracking-wide uppercase sm:text-base">
                 {MESES[month]} {year}
               </span>
-              <TotalBadge value="$0" />
             </div>
 
-            <div className="flex flex-1 items-center justify-end">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Mes siguiente"
-                onClick={() => shiftMonth(1)}
-                className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-              >
-                <ChevronRight className="size-5" />
-              </Button>
+            <div className="flex items-center justify-start gap-2">
+              <TotalBadge value="$0" className="ml-3 sm:ml-6" />
+              <div className="ml-auto">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Mes siguiente"
+                  onClick={() => shiftMonth(1)}
+                  className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+                >
+                  <ChevronRight className="size-5" />
+                </Button>
+              </div>
             </div>
           </div>
 
