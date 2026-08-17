@@ -8,6 +8,7 @@ import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { UserMenu } from "@/components/turnos/UserMenu";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { TotalBadge } from "@/components/turnos/TotalBadge";
 import { getSession, getToken } from "@/lib/auth";
 import { API_V1_PREFIX, getApiBaseUrl } from "@/lib/config";
 import {
@@ -26,6 +27,7 @@ import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 
 
 export const Route = createFileRoute("/")({
+
   head: () => ({
     meta: [
       { title: "Agenda de Turnos | Calendario mensual" },
