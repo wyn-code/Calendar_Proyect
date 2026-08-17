@@ -306,7 +306,7 @@ function Index() {
         </header>
 
         <div className="overflow-hidden rounded-lg bg-card shadow-sm">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-primary px-2 py-2 text-primary-foreground sm:px-3">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 bg-primary px-2 py-2 text-primary-foreground sm:gap-6 sm:px-3">
             <div className="flex items-center justify-start">
               <Button
                 variant="ghost"
