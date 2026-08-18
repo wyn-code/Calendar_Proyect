@@ -317,7 +317,9 @@ function Index() {
               >
                 <ChevronLeft className="size-5" />
               </Button>
+              <TotalBadge label="A FAVOR" value="$0" className="ml-2 sm:ml-4" />
             </div>
+
 
             <div className="text-center">
               <span className="text-sm font-bold tracking-wide uppercase sm:text-base">
