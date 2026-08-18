@@ -62,3 +62,25 @@ export async function login(
   setSession(session);
   return session;
 }
+
+/**
+ * Cuenta demo local (sin backend). Crea una sesión en el navegador
+ * para poder usar la app sin pasar por el login.
+ * Email: demo@calendarpro.app — Contraseña: demo1234
+ */
+export const DEMO_CREDENTIALS = { email: "demo@calendarpro.app", password: "demo1234" };
+
+export function startDemoSession(): Session {
+  const session: Session = {
+    token: "demo-local-token",
+    user: {
+      id: 0,
+      email: DEMO_CREDENTIALS.email,
+      nombre: "Demo",
+      activo: true,
+      created_at: new Date().toISOString(),
+    },
+  };
+  setSession(session);
+  return session;
+}

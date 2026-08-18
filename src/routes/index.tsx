@@ -9,7 +9,7 @@ import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
 import { UserMenu } from "@/components/turnos/UserMenu";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { TotalBadge } from "@/components/turnos/TotalBadge";
-import { getSession, getToken } from "@/lib/auth";
+import { getSession, getToken, startDemoSession } from "@/lib/auth";
 import { API_V1_PREFIX, getApiBaseUrl } from "@/lib/config";
 import {
   useAppointments,
@@ -62,8 +62,11 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (mounted && !getSession()) setLoginOpen(true);
+    if (!mounted) return;
+    // Sin sesión: arranca automáticamente la cuenta demo local (sin login).
+    if (!getSession()) startDemoSession();
   }, [mounted]);
+
 
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
