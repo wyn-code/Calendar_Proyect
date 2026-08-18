@@ -62,8 +62,11 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (mounted && !getSession()) setLoginOpen(true);
+    if (!mounted) return;
+    // Sin sesión: arranca automáticamente la cuenta demo local (sin login).
+    if (!getSession()) startDemoSession();
   }, [mounted]);
+
 
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
