@@ -105,3 +105,12 @@ export const api = {
     request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
   delete: <T = void>(path: string) => request<T>(path, { method: "DELETE" }),
 };
+
+export interface MonthlyBillingResponse {
+  year: number;
+  month: number;
+  obra_social_sessions: number;
+  particular_sessions: number;
+  total_a_pagar: number;
+  a_favor: number;
+}

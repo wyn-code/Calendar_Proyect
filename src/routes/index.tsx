@@ -19,6 +19,8 @@ import {
 } from "@/hooks/use-appointments";
 import { useCreatePatient, usePatients, useUpdatePatient } from "@/hooks/use-patients";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
+import { useBilling } from "@/hooks/use-billing";
+import { formatCurrency } from "@/lib/format";
 import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
 import { normalizeNombre } from "@/lib/normalize";
 import type { Consultorio } from "@/lib/api";
@@ -71,6 +73,16 @@ function Index() {
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
   const { data: obrasSociales = [] } = useObraSociales();
+  const { data: billing, isLoading: billingLoading, error: billingError } = useBilling(year, month);
+
+  useEffect(() => {
+    if (billingError) {
+      sileo.error({
+        title: "No se pudieron cargar los totales",
+        description: "Revisá la conexión e intentá de nuevo.",
+      });
+    }
+  }, [billingError]);
   const createAppointment = useCreateAppointment();
   const updateAppointment = useUpdateAppointment();
   const deleteAppointment = useDeleteAppointment();
@@ -320,7 +332,11 @@ function Index() {
               >
                 <ChevronLeft className="size-5" />
               </Button>
-              <TotalBadge label="A FAVOR" value="$0" className="ml-2 sm:ml-4" />
+              <TotalBadge
+                label="A FAVOR"
+                value={billingLoading ? "..." : formatCurrency(billing?.a_favor ?? 0)}
+                className="ml-2 sm:ml-4"
+              />
             </div>
 
 
@@ -331,7 +347,10 @@ function Index() {
             </div>
 
             <div className="flex items-center justify-start gap-2">
-              <TotalBadge value="$0" className="ml-3 sm:ml-6" />
+              <TotalBadge
+                value={billingLoading ? "..." : formatCurrency(billing?.total_a_pagar ?? 0)}
+                className="ml-3 sm:ml-6"
+              />
               <div className="ml-auto">
                 <Button
                   variant="ghost"
