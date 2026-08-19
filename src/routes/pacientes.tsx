@@ -4,6 +4,7 @@ import { Search, Upload } from "lucide-react";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConsultorioFilter } from "@/components/layout/ConsultorioFilter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/pacientes")({
 const FILTROS = ["Todos", "Particular", "Obra Social"] as const;
 
 function PacientesPage() {
-  const { pacientes, registrarFactura } = useMockStore();
+  const { pacientes, registrarFactura, filtroConsultorio } = useMockStore();
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]>("Todos");
   const [facturaPara, setFacturaPara] = useState<string | null>(null);
@@ -52,15 +53,17 @@ function PacientesPage() {
       pacientes.filter(
         (p) =>
           p.nombre.toLowerCase().includes(q.trim().toLowerCase()) &&
-          (filtro === "Todos" || p.cobertura === (filtro as CoberturaMock)),
+          (filtro === "Todos" || p.cobertura === (filtro as CoberturaMock)) &&
+          (filtroConsultorio === "Todos" || p.consultorio === filtroConsultorio),
       ),
-    [pacientes, q, filtro],
+    [pacientes, q, filtro, filtroConsultorio],
   );
 
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-5xl space-y-4 pb-10">
-        <PageHeader title="Pacientes" subtitle={`${pacientes.length} pacientes cargados`} />
+        <PageHeader title="Pacientes" subtitle={`${visibles.length} pacientes en vista`} />
+        <ConsultorioFilter />
 
         <div className="space-y-3 rounded-lg bg-card/90 p-3 shadow-sm backdrop-blur-sm">
           <div className="relative">
@@ -173,6 +176,9 @@ function PacientesPage() {
             <FacturaUploadFlow
               key={facturaPara}
               pacienteInicial={facturaPara}
+              consultorioInicial={
+                pacientes.find((p) => p.nombre === facturaPara)?.consultorio ?? ""
+              }
               onGuardado={(nombre, sesiones, fecha) => registrarFactura(nombre, sesiones, fecha)}
             />
           )}

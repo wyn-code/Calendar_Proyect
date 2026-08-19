@@ -14,6 +14,7 @@ import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as FacturasRouteImport } from './routes/facturas'
 import { Route as FinanzasRouteImport } from './routes/finanzas'
 import { Route as PacientesRouteImport } from './routes/pacientes'
+import { Route as PersonalizacionRouteImport } from './routes/personalizacion'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const PacientesRoute = PacientesRouteImport.update({
   path: '/pacientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PersonalizacionRoute = PersonalizacionRouteImport.update({
+  id: '/personalizacion',
+  path: '/personalizacion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/facturas': typeof FacturasRoute
   '/finanzas': typeof FinanzasRoute
   '/pacientes': typeof PacientesRoute
+  '/personalizacion': typeof PersonalizacionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/facturas': typeof FacturasRoute
   '/finanzas': typeof FinanzasRoute
   '/pacientes': typeof PacientesRoute
+  '/personalizacion': typeof PersonalizacionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/facturas': typeof FacturasRoute
   '/finanzas': typeof FinanzasRoute
   '/pacientes': typeof PacientesRoute
+  '/personalizacion': typeof PersonalizacionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/configuracion' | '/facturas' | '/finanzas' | '/pacientes'
+  fullPaths:
+    | '/'
+    | '/configuracion'
+    | '/facturas'
+    | '/finanzas'
+    | '/pacientes'
+    | '/personalizacion'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/configuracion' | '/facturas' | '/finanzas' | '/pacientes'
+  to:
+    | '/'
+    | '/configuracion'
+    | '/facturas'
+    | '/finanzas'
+    | '/pacientes'
+    | '/personalizacion'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/facturas'
     | '/finanzas'
     | '/pacientes'
+    | '/personalizacion'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +105,7 @@ export interface RootRouteChildren {
   FacturasRoute: typeof FacturasRoute
   FinanzasRoute: typeof FinanzasRoute
   PacientesRoute: typeof PacientesRoute
+  PersonalizacionRoute: typeof PersonalizacionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PacientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/personalizacion': {
+      id: '/personalizacion'
+      path: '/personalizacion'
+      fullPath: '/personalizacion'
+      preLoaderRoute: typeof PersonalizacionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   FacturasRoute: FacturasRoute,
   FinanzasRoute: FinanzasRoute,
   PacientesRoute: PacientesRoute,
+  PersonalizacionRoute: PersonalizacionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
