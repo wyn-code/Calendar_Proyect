@@ -11,6 +11,7 @@ import {
   CONSULTORIOS_MOCK,
   FONDOS_MOCK,
   PACIENTES_MOCK,
+  PORCENTAJES_MOCK,
   PRECIOS_MOCK,
   TEMA_DEFAULT,
   type ConsultorioMock,
@@ -94,20 +95,17 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
           ),
         ),
       consultorios,
-      setPorcentaje: (id, porcentaje) =>
-        setConsultorios((prev) =>
-          prev.map((c) =>
-            c.id === id ? { ...c, porcentaje: Math.min(100, Math.max(0, porcentaje)) } : c,
-          ),
-        ),
+      porcentajes,
+      setPorcentajeTipo: (key, val) =>
+        setPorcentajes((prev) => ({ ...prev, [key]: Math.min(100, Math.max(0, val)) })),
       agregarConsultorio: (nombre) =>
         setConsultorios((prev) => [
           ...prev,
           {
             id: Math.max(0, ...prev.map((c) => c.id)) + 1,
             nombre,
-            porcentaje: 40,
-            totalFacturado: 0,
+            facturadoParticular: 0,
+            facturadoObraSocial: 0,
           },
         ]),
       renombrarConsultorio: (id, nombre) =>
