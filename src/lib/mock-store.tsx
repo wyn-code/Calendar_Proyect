@@ -11,6 +11,7 @@ import {
   CONSULTORIOS_MOCK,
   FONDOS_MOCK,
   PACIENTES_MOCK,
+  PORCENTAJES_MOCK,
   PRECIOS_MOCK,
   TEMA_DEFAULT,
   type ConsultorioMock,
@@ -23,7 +24,9 @@ interface MockStore {
   pacientes: PacienteMock[];
   registrarFactura: (nombrePaciente: string, sesiones: number, fechaIso: string) => void;
   consultorios: ConsultorioMock[];
-  setPorcentaje: (id: number, porcentaje: number) => void;
+  /** Porcentajes globales por tipo de consulta (lo que se paga al consultorio). */
+  porcentajes: typeof PORCENTAJES_MOCK;
+  setPorcentajeTipo: (key: keyof typeof PORCENTAJES_MOCK, value: number) => void;
   agregarConsultorio: (nombre: string) => void;
   renombrarConsultorio: (id: number, nombre: string) => void;
   eliminarConsultorio: (id: number) => void;
@@ -61,6 +64,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [pacientes, setPacientes] = useState<PacienteMock[]>(PACIENTES_MOCK);
   const [consultorios, setConsultorios] = useState<ConsultorioMock[]>(CONSULTORIOS_MOCK);
   const [precios, setPrecios] = useState(PRECIOS_MOCK);
+  const [porcentajes, setPorcentajes] = useState(PORCENTAJES_MOCK);
   const [filtroConsultorio, setFiltroConsultorio] = useState("Todos");
   const [tema, setTema] = useState<TemaMock>(TEMA_DEFAULT);
 
@@ -92,20 +96,17 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
           ),
         ),
       consultorios,
-      setPorcentaje: (id, porcentaje) =>
-        setConsultorios((prev) =>
-          prev.map((c) =>
-            c.id === id ? { ...c, porcentaje: Math.min(100, Math.max(0, porcentaje)) } : c,
-          ),
-        ),
+      porcentajes,
+      setPorcentajeTipo: (key, val) =>
+        setPorcentajes((prev) => ({ ...prev, [key]: Math.min(100, Math.max(0, val)) })),
       agregarConsultorio: (nombre) =>
         setConsultorios((prev) => [
           ...prev,
           {
             id: Math.max(0, ...prev.map((c) => c.id)) + 1,
             nombre,
-            porcentaje: 40,
-            totalFacturado: 0,
+            facturadoParticular: 0,
+            facturadoObraSocial: 0,
           },
         ]),
       renombrarConsultorio: (id, nombre) =>
