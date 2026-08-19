@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConsultorioFilter } from "@/components/layout/ConsultorioFilter";
 import { FacturaUploadFlow } from "@/components/facturas/FacturaUploadFlow";
 import { useMockStore } from "@/lib/mock-store";
 
@@ -25,13 +26,18 @@ export const Route = createFileRoute("/facturas")({
 });
 
 function FacturasPage() {
-  const { registrarFactura } = useMockStore();
+  const { registrarFactura, filtroConsultorio } = useMockStore();
 
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-3xl pb-10">
         <PageHeader title="Facturas" subtitle="Cargá una factura nueva" />
-        <FacturaUploadFlow onGuardado={registrarFactura} />
+        <ConsultorioFilter className="mb-4" />
+        <FacturaUploadFlow
+          key={filtroConsultorio}
+          consultorioInicial={filtroConsultorio === "Todos" ? "" : filtroConsultorio}
+          onGuardado={registrarFactura}
+        />
       </div>
     </PageShell>
   );

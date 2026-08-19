@@ -5,6 +5,7 @@ import {
   FileText,
   LogOut,
   Menu,
+  Palette,
   Settings,
   UserCircle2,
   Users,
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/pacientes", label: "Pacientes", icon: Users },
   { to: "/facturas", label: "Facturas", icon: FileText },
   { to: "/finanzas", label: "Finanzas", icon: Wallet },
+  { to: "/personalizacion", label: "Personalización", icon: Palette },
   { to: "/configuracion", label: "Configuración", icon: Settings },
 ] as const;
 

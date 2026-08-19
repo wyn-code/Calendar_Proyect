@@ -4,6 +4,7 @@ import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConsultorioFilter } from "@/components/layout/ConsultorioFilter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +50,12 @@ function ConfiguracionPage() {
     eliminarConsultorio,
     precios,
     setPrecio,
+    filtroConsultorio,
   } = useMockStore();
+  const consultoriosVisibles =
+    filtroConsultorio === "Todos"
+      ? consultorios
+      : consultorios.filter((c) => c.nombre === filtroConsultorio);
   const [nuevo, setNuevo] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [editNombre, setEditNombre] = useState("");
@@ -60,11 +66,12 @@ function ConfiguracionPage() {
     <PageShell>
       <div className="mx-auto w-full max-w-3xl space-y-4 pb-10">
         <PageHeader title="Configuración" subtitle="Consultorios y precios" />
+        <ConsultorioFilter />
 
         <section className="rounded-lg bg-card/90 p-4 shadow-sm backdrop-blur-sm">
           <h2 className="text-base font-bold">Consultorios</h2>
           <ul className="mt-3 space-y-2">
-            {consultorios.map((c) => (
+            {consultoriosVisibles.map((c) => (
               <li
                 key={c.id}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border px-3 py-2"

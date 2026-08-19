@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConsultorioFilter } from "@/components/layout/ConsultorioFilter";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
@@ -27,13 +28,18 @@ export const Route = createFileRoute("/finanzas")({
 });
 
 function FinanzasPage() {
-  const { consultorios, setPorcentaje } = useMockStore();
+  const { consultorios, setPorcentaje, filtroConsultorio } = useMockStore();
 
-  const totalAPagar = consultorios.reduce(
+  const visibles =
+    filtroConsultorio === "Todos"
+      ? consultorios
+      : consultorios.filter((c) => c.nombre === filtroConsultorio);
+
+  const totalAPagar = visibles.reduce(
     (acc, c) => acc + (c.totalFacturado * c.porcentaje) / 100,
     0,
   );
-  const totalAFavor = consultorios.reduce(
+  const totalAFavor = visibles.reduce(
     (acc, c) => acc + (c.totalFacturado * (100 - c.porcentaje)) / 100,
     0,
   );
@@ -42,6 +48,7 @@ function FinanzasPage() {
     <PageShell>
       <div className="mx-auto w-full max-w-3xl space-y-4 pb-10">
         <PageHeader title="Finanzas" subtitle="Reparto por consultorio" />
+        <ConsultorioFilter />
 
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg bg-card/90 p-4 shadow-sm backdrop-blur-sm">
@@ -57,7 +64,7 @@ function FinanzasPage() {
         </div>
 
         <div className="space-y-3">
-          {consultorios.map((c) => {
+          {visibles.map((c) => {
             const alConsultorio = (c.totalFacturado * c.porcentaje) / 100;
             const aFavor = c.totalFacturado - alConsultorio;
             return (
