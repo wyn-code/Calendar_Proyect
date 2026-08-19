@@ -64,6 +64,7 @@ export function MockStoreProvider({ children }: { children: ReactNode }) {
   const [pacientes, setPacientes] = useState<PacienteMock[]>(PACIENTES_MOCK);
   const [consultorios, setConsultorios] = useState<ConsultorioMock[]>(CONSULTORIOS_MOCK);
   const [precios, setPrecios] = useState(PRECIOS_MOCK);
+  const [porcentajes, setPorcentajes] = useState(PORCENTAJES_MOCK);
   const [filtroConsultorio, setFiltroConsultorio] = useState("Todos");
   const [tema, setTema] = useState<TemaMock>(TEMA_DEFAULT);
 
