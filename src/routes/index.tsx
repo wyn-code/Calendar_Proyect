@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
-import { UserMenu } from "@/components/turnos/UserMenu";
 import { LoginModal } from "@/components/auth/LoginModal";
-import { TotalBadge } from "@/components/turnos/TotalBadge";
 import { getSession, getToken, startDemoSession } from "@/lib/auth";
 import { API_V1_PREFIX, getApiBaseUrl } from "@/lib/config";
 import {
@@ -19,12 +17,11 @@ import {
 } from "@/hooks/use-appointments";
 import { useCreatePatient, usePatients, useUpdatePatient } from "@/hooks/use-patients";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
-import { useBilling } from "@/hooks/use-billing";
-import { formatCurrency } from "@/lib/format";
 import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
 import { normalizeNombre } from "@/lib/normalize";
 import type { Consultorio } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
+import { AppMenu } from "@/components/layout/AppMenu";
 import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 
 
@@ -73,16 +70,6 @@ function Index() {
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
   const { data: obrasSociales = [] } = useObraSociales();
-  const { data: billing, isLoading: billingLoading, error: billingError } = useBilling(year, month);
-
-  useEffect(() => {
-    if (billingError) {
-      sileo.error({
-        title: "No se pudieron cargar los totales",
-        description: "Revisá la conexión e intentá de nuevo.",
-      });
-    }
-  }, [billingError]);
   const createAppointment = useCreateAppointment();
   const updateAppointment = useUpdateAppointment();
   const deleteAppointment = useDeleteAppointment();
@@ -295,7 +282,8 @@ function Index() {
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-5xl space-y-4 pb-24 md:pb-4">
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg bg-card/85 px-3 py-2.5 shadow-sm backdrop-blur-sm sm:flex sm:justify-between sm:px-4">
+        <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg bg-card/85 px-2 py-2.5 shadow-sm backdrop-blur-sm sm:px-3">
+          <AppMenu />
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold tracking-tight sm:text-2xl">
               Agenda de Turnos
@@ -321,24 +309,16 @@ function Index() {
         </header>
 
         <div className="overflow-hidden rounded-lg bg-card shadow-sm">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 bg-primary px-2 py-2 text-primary-foreground sm:gap-6 sm:px-3">
-            <div className="flex items-center justify-start">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Mes anterior"
-                onClick={() => shiftMonth(-1)}
-                className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-              >
-                <ChevronLeft className="size-5" />
-              </Button>
-              <TotalBadge
-                label="A FAVOR"
-                value={billingLoading ? "..." : formatCurrency(billing?.a_favor ?? 0)}
-                className="ml-2 sm:ml-4"
-              />
-            </div>
-
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 bg-primary px-2 py-2 text-primary-foreground sm:px-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes anterior"
+              onClick={() => shiftMonth(-1)}
+              className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+            >
+              <ChevronLeft className="size-5" />
+            </Button>
 
             <div className="text-center">
               <span className="text-sm font-bold tracking-wide uppercase sm:text-base">
@@ -346,24 +326,17 @@ function Index() {
               </span>
             </div>
 
-            <div className="flex items-center justify-start gap-2">
-              <TotalBadge
-                value={billingLoading ? "..." : formatCurrency(billing?.total_a_pagar ?? 0)}
-                className="ml-3 sm:ml-6"
-              />
-              <div className="ml-auto">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Mes siguiente"
-                  onClick={() => shiftMonth(1)}
-                  className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-                >
-                  <ChevronRight className="size-5" />
-                </Button>
-              </div>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Mes siguiente"
+              onClick={() => shiftMonth(1)}
+              className="size-9 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+            >
+              <ChevronRight className="size-5" />
+            </Button>
           </div>
+
 
 
           {isLoading && (
@@ -395,9 +368,6 @@ function Index() {
               <CoberturaBadge tipo="obra_social" label="O.S" />
               Obra Social
             </span>
-          </div>
-          <div className="flex items-center rounded-lg bg-card/85 px-1 py-1 shadow-sm backdrop-blur-sm">
-            <UserMenu />
           </div>
         </div>
       </div>
