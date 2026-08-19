@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarGrid } from "@/components/turnos/CalendarGrid";
 import { TurnoDialog } from "@/components/turnos/TurnoDialog";
 import { DayDetailDialog } from "@/components/turnos/DayDetailDialog";
-import { UserMenu } from "@/components/turnos/UserMenu";
 import { LoginModal } from "@/components/auth/LoginModal";
-import { TotalBadge } from "@/components/turnos/TotalBadge";
 import { getSession, getToken, startDemoSession } from "@/lib/auth";
 import { API_V1_PREFIX, getApiBaseUrl } from "@/lib/config";
 import {
@@ -19,12 +17,11 @@ import {
 } from "@/hooks/use-appointments";
 import { useCreatePatient, usePatients, useUpdatePatient } from "@/hooks/use-patients";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
-import { useBilling } from "@/hooks/use-billing";
-import { formatCurrency } from "@/lib/format";
 import { MESES, appointmentsToTurnos, type TipoConsulta, type Turno } from "@/lib/turnos";
 import { normalizeNombre } from "@/lib/normalize";
 import type { Consultorio } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
+import { AppMenu } from "@/components/layout/AppMenu";
 import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 
 
@@ -73,16 +70,6 @@ function Index() {
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
   const { data: obrasSociales = [] } = useObraSociales();
-  const { data: billing, isLoading: billingLoading, error: billingError } = useBilling(year, month);
-
-  useEffect(() => {
-    if (billingError) {
-      sileo.error({
-        title: "No se pudieron cargar los totales",
-        description: "Revisá la conexión e intentá de nuevo.",
-      });
-    }
-  }, [billingError]);
   const createAppointment = useCreateAppointment();
   const updateAppointment = useUpdateAppointment();
   const deleteAppointment = useDeleteAppointment();
@@ -381,9 +368,6 @@ function Index() {
               <CoberturaBadge tipo="obra_social" label="O.S" />
               Obra Social
             </span>
-          </div>
-          <div className="flex items-center rounded-lg bg-card/85 px-1 py-1 shadow-sm backdrop-blur-sm">
-            <UserMenu />
           </div>
         </div>
       </div>
