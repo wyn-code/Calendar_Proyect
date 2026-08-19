@@ -23,7 +23,9 @@ interface MockStore {
   pacientes: PacienteMock[];
   registrarFactura: (nombrePaciente: string, sesiones: number, fechaIso: string) => void;
   consultorios: ConsultorioMock[];
-  setPorcentaje: (id: number, porcentaje: number) => void;
+  /** Porcentajes globales por tipo de consulta (lo que se paga al consultorio). */
+  porcentajes: typeof PORCENTAJES_MOCK;
+  setPorcentajeTipo: (key: keyof typeof PORCENTAJES_MOCK, value: number) => void;
   agregarConsultorio: (nombre: string) => void;
   renombrarConsultorio: (id: number, nombre: string) => void;
   eliminarConsultorio: (id: number) => void;

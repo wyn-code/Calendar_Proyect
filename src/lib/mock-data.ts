@@ -99,14 +99,20 @@ export const PACIENTES_MOCK: PacienteMock[] = [
 export interface ConsultorioMock {
   id: number;
   nombre: string;
-  porcentaje: number; // % que se paga al consultorio
-  totalFacturado: number;
+  facturadoParticular: number;
+  facturadoObraSocial: number;
 }
 
 export const CONSULTORIOS_MOCK: ConsultorioMock[] = [
-  { id: 1, nombre: "Neurovital", porcentaje: 40, totalFacturado: 80511.8 },
-  { id: 2, nombre: "Infancias", porcentaje: 35, totalFacturado: 52340.5 },
+  { id: 1, nombre: "Neurovital", facturadoParticular: 50000, facturadoObraSocial: 30512 },
+  { id: 2, nombre: "Infancias", facturadoParticular: 32000, facturadoObraSocial: 20340 },
 ];
+
+/** Porcentajes globales que se le pagan al consultorio, por tipo de consulta. */
+export const PORCENTAJES_MOCK = {
+  particular: 15,
+  obraSocial: 20,
+};
 
 export const PRECIOS_MOCK = {
   particular: 20000,
