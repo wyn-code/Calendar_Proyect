@@ -119,3 +119,55 @@ export function formatFechaCorta(iso: string | null): string {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
 }
+
+/* ---------- Personalización (mock, sin persistencia) ---------- */
+
+export interface FondoMock {
+  id: string;
+  label: string;
+  /** valor CSS para background-image */
+  css: string;
+}
+
+export interface TemaMock {
+  /** color principal en hex */
+  primary: string;
+  /** id de un fondo predefinido, o "custom" cuando es una imagen subida */
+  fondoId: string;
+  /** background-image CSS resuelto */
+  fondoCss: string;
+}
+
+export const COLORES_MOCK = [
+  { id: "rosa", label: "Rosa", hex: "#d96a92" },
+  { id: "violeta", label: "Violeta", hex: "#8b6ad9" },
+  { id: "verde", label: "Verde", hex: "#4fa87a" },
+  { id: "azul", label: "Azul", hex: "#4c7fd1" },
+  { id: "coral", label: "Coral", hex: "#e2725b" },
+  { id: "gris", label: "Gris", hex: "#6b6570" },
+];
+
+export const FONDOS_MOCK: FondoMock[] = [
+  { id: "floral", label: "Floral", css: "" }, // se resuelve con el asset en PageShell
+  {
+    id: "rosa-suave",
+    label: "Rosa suave",
+    css: "linear-gradient(160deg, #fdf1f5 0%, #f7e2ec 60%, #efd6e6 100%)",
+  },
+  {
+    id: "lila",
+    label: "Lila",
+    css: "linear-gradient(160deg, #f4f0fb 0%, #e8e0f8 60%, #ded4f3 100%)",
+  },
+  {
+    id: "crema",
+    label: "Crema",
+    css: "linear-gradient(160deg, #fdfaf4 0%, #f6eee2 100%)",
+  },
+];
+
+export const TEMA_DEFAULT: TemaMock = {
+  primary: "#d96a92",
+  fondoId: "floral",
+  fondoCss: "",
+};
