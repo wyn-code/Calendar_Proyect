@@ -8,7 +8,7 @@ import { EMPTY_FACTURA, type FacturaForm } from "@/lib/mock-data";
 
 type Estado = "inicial" | "procesando" | "revision" | "exito" | "error";
 
-const DATOS_LEIDOS: Omit<FacturaForm, "paciente"> = {
+const DATOS_LEIDOS: Omit<FacturaForm, "paciente" | "consultorio"> = {
   dni: "38.412.905",
   obraSocial: "OSDE",
   nroAfiliado: "6109-4432/01",
@@ -23,12 +23,21 @@ const DATOS_LEIDOS: Omit<FacturaForm, "paciente"> = {
 
 interface Props {
   pacienteInicial?: string;
+  consultorioInicial?: string;
   onGuardado?: (paciente: string, sesiones: number, fechaIso: string) => void;
 }
 
-export function FacturaUploadFlow({ pacienteInicial = "", onGuardado }: Props) {
+export function FacturaUploadFlow({
+  pacienteInicial = "",
+  consultorioInicial = "",
+  onGuardado,
+}: Props) {
   const [estado, setEstado] = useState<Estado>("inicial");
-  const [form, setForm] = useState<FacturaForm>({ ...EMPTY_FACTURA, paciente: pacienteInicial });
+  const [form, setForm] = useState<FacturaForm>({
+    ...EMPTY_FACTURA,
+    paciente: pacienteInicial,
+    consultorio: consultorioInicial,
+  });
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fallosRef = useRef(0);
@@ -42,17 +51,21 @@ export function FacturaUploadFlow({ pacienteInicial = "", onGuardado }: Props) {
       fallosRef.current += 1;
       // Cada tercer archivo simula una lectura fallida (carga manual).
       if (fallosRef.current % 3 === 0) {
-        setForm({ ...EMPTY_FACTURA, paciente: pacienteInicial });
+        setForm({ ...EMPTY_FACTURA, paciente: pacienteInicial, consultorio: consultorioInicial });
         setEstado("error");
       } else {
-        setForm({ ...DATOS_LEIDOS, paciente: pacienteInicial || "Camila Rossi" });
+        setForm({
+          ...DATOS_LEIDOS,
+          paciente: pacienteInicial || "Camila Rossi",
+          consultorio: consultorioInicial || "Neurovital",
+        });
         setEstado("revision");
       }
     }, 1500);
   };
 
   const reset = (next: Estado = "inicial") => {
-    setForm({ ...EMPTY_FACTURA, paciente: pacienteInicial });
+    setForm({ ...EMPTY_FACTURA, paciente: pacienteInicial, consultorio: consultorioInicial });
     setEstado(next);
   };
 
@@ -133,6 +146,7 @@ export function FacturaUploadFlow({ pacienteInicial = "", onGuardado }: Props) {
     numeric?: boolean;
   }> = [
     { key: "paciente", label: "Paciente" },
+    { key: "consultorio", label: "Consultorio" },
     { key: "dni", label: "DNI", numeric: true },
     { key: "obraSocial", label: "Obra Social" },
     { key: "nroAfiliado", label: "N° Afiliado" },

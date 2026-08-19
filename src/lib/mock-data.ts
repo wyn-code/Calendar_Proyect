@@ -15,6 +15,7 @@ export interface PacienteMock {
 
 export interface FacturaForm {
   paciente: string;
+  consultorio: string;
   dni: string;
   obraSocial: string;
   nroAfiliado: string;
@@ -29,6 +30,7 @@ export interface FacturaForm {
 
 export const EMPTY_FACTURA: FacturaForm = {
   paciente: "",
+  consultorio: "",
   dni: "",
   obraSocial: "",
   nroAfiliado: "",
