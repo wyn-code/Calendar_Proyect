@@ -1,8 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Pencil, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { sileo } from "sileo";
+import { createFileRoute } from "@tanstack/react-router";
+import { Search, Upload } from "lucide-react";
+
+import { PageShell } from "@/components/layout/PageShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -11,158 +14,170 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useObraSociales } from "@/hooks/use-obra-sociales";
-import { usePatients, useUpdatePatient } from "@/hooks/use-patients";
-import { PageShell } from "@/components/layout/PageShell";
-import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
-import { PatientEditDialog } from "@/components/pacientes/PatientEditDialog";
-import type { Patient } from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FacturaUploadFlow } from "@/components/facturas/FacturaUploadFlow";
+import { formatFechaCorta, type CoberturaMock } from "@/lib/mock-data";
+import { useMockStore } from "@/lib/mock-store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pacientes")({
   head: () => ({
     meta: [
-      { title: "Pacientes | Agenda de Turnos" },
+      { title: "Pacientes | Calendar Pro" },
       {
         name: "description",
-        content: "Listado de pacientes de la agenda con su obra social.",
+        content:
+          "Listado de pacientes con obra social, sesiones del mes y última factura cargada, con carga rápida de facturas.",
+      },
+      { property: "og:title", content: "Pacientes | Calendar Pro" },
+      {
+        property: "og:description",
+        content: "Buscá pacientes, filtrá por cobertura y subí facturas en un toque.",
       },
     ],
   }),
-  component: Pacientes,
+  component: PacientesPage,
 });
 
-function Pacientes() {
-  const { data: patients = [], isLoading } = usePatients();
-  const { data: obrasSociales = [] } = useObraSociales();
-  const updatePatient = useUpdatePatient();
-  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+const FILTROS = ["Todos", "Particular", "Obra Social"] as const;
 
-  const obraSocialPorId = useMemo(
-    () => new Map(obrasSociales.map((o) => [o.id, o.nombre])),
-    [obrasSociales],
+function PacientesPage() {
+  const { pacientes, registrarFactura } = useMockStore();
+  const [q, setQ] = useState("");
+  const [filtro, setFiltro] = useState<(typeof FILTROS)[number]>("Todos");
+  const [facturaPara, setFacturaPara] = useState<string | null>(null);
+
+  const visibles = useMemo(
+    () =>
+      pacientes.filter(
+        (p) =>
+          p.nombre.toLowerCase().includes(q.trim().toLowerCase()) &&
+          (filtro === "Todos" || p.cobertura === (filtro as CoberturaMock)),
+      ),
+    [pacientes, q, filtro],
   );
-
-  const pacientesOrdenados = useMemo(
-    () => [...patients].sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo, "es")),
-    [patients],
-  );
-
-  const handleSave = async (data: Parameters<typeof updatePatient.mutateAsync>[0]["data"]) => {
-    if (!editingPatient) return;
-    try {
-      await updatePatient.mutateAsync({ id: editingPatient.id, data });
-      sileo.success({
-        title: "Paciente actualizado",
-        description: "Los datos del paciente se guardaron.",
-      });
-      setEditingPatient(null);
-    } catch (e) {
-      sileo.error({
-        title: "No se pudo actualizar",
-        description: e instanceof Error ? e.message : "Revisá los datos e intentá de nuevo.",
-      });
-    }
-  };
 
   return (
     <PageShell>
-      <div className="mx-auto w-full max-w-4xl space-y-4">
-        <header className="flex items-center justify-between gap-3 rounded-lg bg-card/85 px-4 py-2.5 shadow-sm backdrop-blur-sm">
-          <div className="min-w-0">
-            <h1 className="flex items-center gap-2 truncate text-lg font-bold tracking-tight sm:text-2xl">
-              <Users className="size-5 shrink-0" />
-              Pacientes
-            </h1>
-            <p className="truncate text-xs text-muted-foreground sm:text-sm">
-              {patients.length > 0
-                ? `${patients.length} paciente${patients.length === 1 ? "" : "s"} cargado${patients.length === 1 ? "" : "s"}`
-                : "Listado de pacientes"}
-            </p>
-          </div>
-          <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
-            <Link to="/">
-              <ArrowLeft className="size-4" />
-              Volver al calendario
-            </Link>
-          </Button>
-        </header>
+      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10">
+        <PageHeader title="Pacientes" subtitle={`${pacientes.length} pacientes cargados`} />
 
-        <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <div className="space-y-3 rounded-lg bg-card/90 p-3 shadow-sm backdrop-blur-sm">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="min-h-11 pl-9"
+              placeholder="Buscar por nombre"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {FILTROS.map((f) => (
+              <Button
+                key={f}
+                size="sm"
+                variant={filtro === f ? "default" : "outline"}
+                className="min-h-10"
+                onClick={() => setFiltro(f)}
+              >
+                {f}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile: tarjetas apiladas */}
+        <div className="space-y-3 md:hidden">
+          {visibles.map((p) => (
+            <div key={p.id} className="rounded-lg bg-card/90 p-3 shadow-sm backdrop-blur-sm">
+              <h2 className="text-sm font-bold">{p.nombre}</h2>
+              <dl className="mt-2 grid grid-cols-2 gap-y-1 text-xs text-muted-foreground">
+                <dt>DNI</dt>
+                <dd className="text-right text-foreground">{p.dni}</dd>
+                <dt>Cobertura</dt>
+                <dd className="text-right text-foreground">{p.obraSocial ?? "Particular"}</dd>
+                <dt>Sesiones este mes</dt>
+                <dd className="text-right text-foreground">{p.sesionesMes}</dd>
+                <dt>Última factura</dt>
+                <dd
+                  className={cn("text-right", p.ultimaFactura ? "text-foreground" : "italic")}
+                >
+                  {formatFechaCorta(p.ultimaFactura)}
+                </dd>
+              </dl>
+              <Button
+                className="mt-3 min-h-11 w-full"
+                size="sm"
+                onClick={() => setFacturaPara(p.nombre)}
+              >
+                <Upload className="size-4" /> Subir factura
+              </Button>
+            </div>
+          ))}
+          {visibles.length === 0 && (
+            <p className="rounded-lg bg-card/90 p-6 text-center text-sm text-muted-foreground backdrop-blur-sm">
+              No hay pacientes que coincidan.
+            </p>
+          )}
+        </div>
+
+        {/* Desktop: tabla */}
+        <div className="hidden overflow-hidden rounded-lg bg-card/95 shadow-sm backdrop-blur-sm md:block">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Consultorio</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Obra social</TableHead>
-                <TableHead>Observaciones</TableHead>
-                <TableHead className="w-12" />
+                <TableHead>Nombre y apellido</TableHead>
+                <TableHead>DNI</TableHead>
+                <TableHead>Obra Social</TableHead>
+                <TableHead className="text-center">Sesiones este mes</TableHead>
+                <TableHead>Última factura</TableHead>
+                <TableHead className="text-right">Acción</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
-                    Cargando pacientes…
+              {visibles.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.nombre}</TableCell>
+                  <TableCell>{p.dni}</TableCell>
+                  <TableCell>{p.obraSocial ?? "Particular"}</TableCell>
+                  <TableCell className="text-center">{p.sesionesMes}</TableCell>
+                  <TableCell className={cn(!p.ultimaFactura && "text-muted-foreground italic")}>
+                    {formatFechaCorta(p.ultimaFactura)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" onClick={() => setFacturaPara(p.nombre)}>
+                      <Upload className="size-4" /> Subir factura
+                    </Button>
                   </TableCell>
                 </TableRow>
-              ) : pacientesOrdenados.length === 0 ? (
+              ))}
+              {visibles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
-                    No hay pacientes cargados.
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No hay pacientes que coincidan.
                   </TableCell>
                 </TableRow>
-              ) : (
-                pacientesOrdenados.map((p) => {
-                  const obraSocial =
-                    p.obra_social_id != null ? obraSocialPorId.get(p.obra_social_id) : undefined;
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.nombre_completo}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs font-medium">
-                          {p.consultorio}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {p.telefono?.trim() ? p.telefono : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {obraSocial ? (
-                          <CoberturaBadge tipo="obra_social" label={obraSocial} />
-                        ) : (
-                          <span className="text-muted-foreground">Sin obra social</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-[220px] truncate text-muted-foreground">
-                        {p.observaciones?.trim() ? p.observaciones : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 text-muted-foreground"
-                          aria-label={`Editar a ${p.nombre_completo}`}
-                          onClick={() => setEditingPatient(p)}
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
               )}
             </TableBody>
           </Table>
         </div>
       </div>
 
-      <PatientEditDialog
-        patient={editingPatient}
-        obrasSociales={obrasSociales}
-        onClose={() => setEditingPatient(null)}
-        onSave={handleSave}
-      />
+      <Dialog open={facturaPara !== null} onOpenChange={(o) => !o && setFacturaPara(null)}>
+        <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Subir factura · {facturaPara}</DialogTitle>
+          </DialogHeader>
+          {facturaPara && (
+            <FacturaUploadFlow
+              key={facturaPara}
+              pacienteInicial={facturaPara}
+              onGuardado={(nombre, sesiones, fecha) => registrarFactura(nombre, sesiones, fecha)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
