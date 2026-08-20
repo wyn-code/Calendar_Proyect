@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "sileo";
+import { ConsultorioFilterProvider } from "@/lib/consultorio-filter";
 
 function NotFoundComponent() {
   return (
@@ -124,10 +125,38 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("calendar-pro-tema");
+      if (raw) {
+        const tema = JSON.parse(raw) as { primary: string };
+        const root = document.documentElement;
+        root.style.setProperty("--primary", tema.primary);
+        root.style.setProperty("--ring", tema.primary);
+        const h = tema.primary.replace("#", "");
+        const full =
+          h.length === 3
+            ? h
+                .split("")
+                .map((c) => c + c)
+                .join("")
+            : h;
+        const r = parseInt(full.slice(0, 2), 16) || 0;
+        const g = parseInt(full.slice(2, 4), 16) || 0;
+        const b = parseInt(full.slice(4, 6), 16) || 0;
+        const fg = (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#1c1418" : "#ffffff";
+        root.style.setProperty("--primary-foreground", fg);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <ConsultorioFilterProvider>
+        <Outlet />
+      </ConsultorioFilterProvider>
       <Toaster position="bottom-right" theme="light" options={{ duration: 4000 }} />
     </QueryClientProvider>
   );

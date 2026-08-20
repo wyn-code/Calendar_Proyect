@@ -10,11 +10,30 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConfiguracionRouteImport } from './routes/configuracion'
+import { Route as FacturasRouteImport } from './routes/facturas'
+import { Route as FinanzasRouteImport } from './routes/finanzas'
 import { Route as PacientesRouteImport } from './routes/pacientes'
+import { Route as PersonalizacionRouteImport } from './routes/personalizacion'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracionRoute = ConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FacturasRoute = FacturasRouteImport.update({
+  id: '/facturas',
+  path: '/facturas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanzasRoute = FinanzasRouteImport.update({
+  id: '/finanzas',
+  path: '/finanzas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PacientesRoute = PacientesRouteImport.update({
@@ -22,31 +41,71 @@ const PacientesRoute = PacientesRouteImport.update({
   path: '/pacientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PersonalizacionRoute = PersonalizacionRouteImport.update({
+  id: '/personalizacion',
+  path: '/personalizacion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/configuracion': typeof ConfiguracionRoute
+  '/facturas': typeof FacturasRoute
+  '/finanzas': typeof FinanzasRoute
   '/pacientes': typeof PacientesRoute
+  '/personalizacion': typeof PersonalizacionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/configuracion': typeof ConfiguracionRoute
+  '/facturas': typeof FacturasRoute
+  '/finanzas': typeof FinanzasRoute
   '/pacientes': typeof PacientesRoute
+  '/personalizacion': typeof PersonalizacionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/configuracion': typeof ConfiguracionRoute
+  '/facturas': typeof FacturasRoute
+  '/finanzas': typeof FinanzasRoute
   '/pacientes': typeof PacientesRoute
+  '/personalizacion': typeof PersonalizacionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/pacientes'
+  fullPaths:
+    | '/'
+    | '/configuracion'
+    | '/facturas'
+    | '/finanzas'
+    | '/pacientes'
+    | '/personalizacion'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/pacientes'
-  id: '__root__' | '/' | '/pacientes'
+  to:
+    | '/'
+    | '/configuracion'
+    | '/facturas'
+    | '/finanzas'
+    | '/pacientes'
+    | '/personalizacion'
+  id:
+    | '__root__'
+    | '/'
+    | '/configuracion'
+    | '/facturas'
+    | '/finanzas'
+    | '/pacientes'
+    | '/personalizacion'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConfiguracionRoute: typeof ConfiguracionRoute
+  FacturasRoute: typeof FacturasRoute
+  FinanzasRoute: typeof FinanzasRoute
   PacientesRoute: typeof PacientesRoute
+  PersonalizacionRoute: typeof PersonalizacionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +117,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/configuracion': {
+      id: '/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof ConfiguracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/facturas': {
+      id: '/facturas'
+      path: '/facturas'
+      fullPath: '/facturas'
+      preLoaderRoute: typeof FacturasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finanzas': {
+      id: '/finanzas'
+      path: '/finanzas'
+      fullPath: '/finanzas'
+      preLoaderRoute: typeof FinanzasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pacientes': {
       id: '/pacientes'
       path: '/pacientes'
@@ -65,12 +145,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PacientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/personalizacion': {
+      id: '/personalizacion'
+      path: '/personalizacion'
+      fullPath: '/personalizacion'
+      preLoaderRoute: typeof PersonalizacionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConfiguracionRoute: ConfiguracionRoute,
+  FacturasRoute: FacturasRoute,
+  FinanzasRoute: FinanzasRoute,
   PacientesRoute: PacientesRoute,
+  PersonalizacionRoute: PersonalizacionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

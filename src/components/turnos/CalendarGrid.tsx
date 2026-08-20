@@ -22,7 +22,6 @@ export function CalendarGrid({
   const weeks = buildMonthGrid(year, month);
   const todayKey = toKey(new Date());
 
-
   return (
     <div className="overflow-hidden rounded-b-lg border border-border bg-card">
       <div className="grid grid-cols-7 border-b border-border bg-muted">
@@ -86,7 +85,6 @@ export function CalendarGrid({
                     ))}
                   </div>
                 ))}
-
             </div>
           );
         })}
