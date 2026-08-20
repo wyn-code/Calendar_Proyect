@@ -104,7 +104,6 @@ export function formatFechaLarga(key: string) {
   return `${DIAS[date.getDay()]} ${d} de ${MESES[m - 1]} ${y}`;
 }
 
-
 /** Matriz de semanas (6x7) que cubre el mes indicado. */
 export function buildMonthGrid(year: number, month: number): Date[][] {
   const first = new Date(year, month, 1);

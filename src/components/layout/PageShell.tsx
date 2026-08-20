@@ -1,10 +1,31 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import fondoFloral from "@/assets/fondo-floral.jpg";
-import { useMockStore } from "@/lib/mock-store";
+
+const STORAGE_KEY = "calendar-pro-tema";
+
+function getBackground(): string {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const tema = JSON.parse(raw) as { fondoCss?: string };
+      if (tema.fondoCss) return tema.fondoCss;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
 
 export function PageShell({ children }: { children: ReactNode }) {
-  const { tema } = useMockStore();
-  const backgroundImage = tema.fondoCss || `url(${fondoFloral})`;
+  const [bg, setBg] = useState(getBackground);
+
+  useEffect(() => {
+    const handler = () => setBg(getBackground());
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  const backgroundImage = bg || `url(${fondoFloral})`;
 
   return (
     <main

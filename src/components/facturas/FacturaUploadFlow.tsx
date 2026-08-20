@@ -4,11 +4,11 @@ import { CheckCircle2, FileUp, Camera, Loader2, AlertTriangle } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EMPTY_FACTURA, type FacturaForm } from "@/lib/mock-data";
+import { useCreateFactura, type FacturaCreate } from "@/hooks/use-facturas";
 
 type Estado = "inicial" | "procesando" | "revision" | "exito" | "error";
 
-const DATOS_LEIDOS: Omit<FacturaForm, "paciente" | "consultorio"> = {
+const DATOS_LEIDOS = {
   dni: "38.412.905",
   obraSocial: "OSDE",
   nroAfiliado: "6109-4432/01",
@@ -24,34 +24,51 @@ const DATOS_LEIDOS: Omit<FacturaForm, "paciente" | "consultorio"> = {
 interface Props {
   pacienteInicial?: string;
   consultorioInicial?: string;
-  onGuardado?: (paciente: string, sesiones: number, fechaIso: string) => void;
 }
 
-export function FacturaUploadFlow({
-  pacienteInicial = "",
-  consultorioInicial = "",
-  onGuardado,
-}: Props) {
+export function FacturaUploadFlow({ pacienteInicial = "", consultorioInicial = "" }: Props) {
   const [estado, setEstado] = useState<Estado>("inicial");
-  const [form, setForm] = useState<FacturaForm>({
-    ...EMPTY_FACTURA,
+  const [form, setForm] = useState({
     paciente: pacienteInicial,
     consultorio: consultorioInicial,
+    dni: "",
+    obraSocial: "",
+    nroAfiliado: "",
+    periodo: "",
+    fechaEmision: "",
+    nroFactura: "",
+    sesiones: "",
+    monto: "",
+    porcentaje: "",
+    fechaPago: "",
   });
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fallosRef = useRef(0);
+  const crearFactura = useCreateFactura();
 
-  const set = (k: keyof FacturaForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
   const procesar = () => {
     setEstado("procesando");
     setTimeout(() => {
       fallosRef.current += 1;
-      // Cada tercer archivo simula una lectura fallida (carga manual).
       if (fallosRef.current % 3 === 0) {
-        setForm({ ...EMPTY_FACTURA, paciente: pacienteInicial, consultorio: consultorioInicial });
+        setForm({
+          paciente: pacienteInicial,
+          consultorio: consultorioInicial,
+          dni: "",
+          obraSocial: "",
+          nroAfiliado: "",
+          periodo: "",
+          fechaEmision: "",
+          nroFactura: "",
+          sesiones: "",
+          monto: "",
+          porcentaje: "",
+          fechaPago: "",
+        });
         setEstado("error");
       } else {
         setForm({
@@ -65,17 +82,43 @@ export function FacturaUploadFlow({
   };
 
   const reset = (next: Estado = "inicial") => {
-    setForm({ ...EMPTY_FACTURA, paciente: pacienteInicial, consultorio: consultorioInicial });
+    setForm({
+      paciente: pacienteInicial,
+      consultorio: consultorioInicial,
+      dni: "",
+      obraSocial: "",
+      nroAfiliado: "",
+      periodo: "",
+      fechaEmision: "",
+      nroFactura: "",
+      sesiones: "",
+      monto: "",
+      porcentaje: "",
+      fechaPago: "",
+    });
     setEstado(next);
   };
 
   const confirmar = () => {
-    onGuardado?.(
-      form.paciente,
-      Number(form.sesiones),
-      form.fechaEmision || new Date().toISOString().slice(0, 10),
-    );
-    setEstado("exito");
+    const payload: FacturaCreate = {
+      paciente_nombre: form.paciente,
+      consultorio: form.consultorio,
+      sesiones: Number(form.sesiones) || 0,
+      monto: Number(form.monto) || 0,
+    };
+    if (form.dni) payload.dni = form.dni;
+    if (form.obraSocial) payload.obra_social = form.obraSocial;
+    if (form.nroAfiliado) payload.nro_afiliado = form.nroAfiliado;
+    if (form.periodo) payload.periodo = form.periodo;
+    if (form.fechaEmision) payload.fecha_emision = form.fechaEmision;
+    if (form.nroFactura) payload.nro_factura = form.nroFactura;
+    if (form.porcentaje) payload.porcentaje = Number(form.porcentaje);
+    if (form.fechaPago) payload.fecha_pago = form.fechaPago;
+
+    crearFactura.mutate(payload, {
+      onSuccess: () => setEstado("exito"),
+      onError: () => setEstado("error"),
+    });
   };
 
   const focusScroll = (e: React.FocusEvent<HTMLElement>) => {
@@ -140,7 +183,7 @@ export function FacturaUploadFlow({
   }
 
   const campos: Array<{
-    key: keyof FacturaForm;
+    key: string;
     label: string;
     type?: string;
     numeric?: boolean;
@@ -176,7 +219,7 @@ export function FacturaUploadFlow({
               className="min-h-11"
               type={c.type ?? "text"}
               inputMode={c.numeric ? "numeric" : undefined}
-              value={form[c.key]}
+              value={form[c.key as keyof typeof form]}
               onChange={set(c.key)}
               onFocus={focusScroll}
             />
@@ -190,8 +233,12 @@ export function FacturaUploadFlow({
         <Button variant="outline" className="min-h-11 flex-1" onClick={() => reset("inicial")}>
           Cancelar
         </Button>
-        <Button className="min-h-11 flex-1" onClick={confirmar}>
-          Confirmar y guardar
+        <Button className="min-h-11 flex-1" disabled={crearFactura.isPending} onClick={confirmar}>
+          {crearFactura.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            "Confirmar y guardar"
+          )}
         </Button>
       </div>
     </div>

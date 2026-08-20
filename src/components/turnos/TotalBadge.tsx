@@ -18,7 +18,13 @@ export function TotalBadge({ label = "TOTAL A PAGAR", value = "$0", className }:
     >
       <DollarSign className="size-3.5 shrink-0 sm:size-4" />
       <span className="hidden sm:inline">{label}:</span>
-      <span className="sm:hidden">{label.split(" ").map((w) => w[0]).join("")}:</span>
+      <span className="sm:hidden">
+        {label
+          .split(" ")
+          .map((w) => w[0])
+          .join("")}
+        :
+      </span>
       <span>{value}</span>
     </span>
   );

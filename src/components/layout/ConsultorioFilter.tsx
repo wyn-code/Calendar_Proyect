@@ -8,16 +8,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-is-mobile";
-import { useMockStore } from "@/lib/mock-store";
+import { useConsultorios } from "@/hooks/use-consultorios";
+import { useConsultorioFiltro } from "@/lib/consultorio-filter";
 import { cn } from "@/lib/utils";
 
-/**
- * Filtro transversal por consultorio. Único componente, reutilizado en todas
- * las secciones menos Calendario. En mobile (o con muchos consultorios)
- * colapsa en un dropdown de una sola fila.
- */
 export function ConsultorioFilter({ className }: { className?: string }) {
-  const { consultorios, filtroConsultorio, setFiltroConsultorio } = useMockStore();
+  const { data: consultorios = [] } = useConsultorios();
+  const { filtroConsultorio, setFiltroConsultorio } = useConsultorioFiltro();
   const isMobile = useIsMobile();
 
   const opciones = ["Todos", ...consultorios.map((c) => c.nombre)];

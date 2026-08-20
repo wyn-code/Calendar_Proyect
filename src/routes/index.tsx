@@ -24,9 +24,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { AppMenu } from "@/components/layout/AppMenu";
 import { CoberturaBadge } from "@/components/turnos/CoberturaBadge";
 
-
 export const Route = createFileRoute("/")({
-
   head: () => ({
     meta: [
       { title: "Agenda de Turnos | Calendario mensual" },
@@ -66,7 +64,6 @@ function Index() {
     if (!getSession()) startDemoSession();
   }, [mounted]);
 
-
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
   const { data: obrasSociales = [] } = useObraSociales();
@@ -97,7 +94,6 @@ function Index() {
     setYear(d.getFullYear());
     setMonth(d.getMonth());
   };
-
 
   const handleSave = async (data: {
     id?: number;
@@ -277,7 +273,6 @@ function Index() {
   };
 
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
-  
 
   return (
     <PageShell>
@@ -337,8 +332,6 @@ function Index() {
             </Button>
           </div>
 
-
-
           {isLoading && (
             <div className="px-3 py-1.5 text-xs text-muted-foreground">Cargando turnos…</div>
           )}
@@ -356,7 +349,6 @@ function Index() {
             onTurnosClick={(key) => setDetalleFecha(key)}
           />
         </div>
-
 
         <div className="flex w-fit flex-wrap items-center gap-2">
           <div className="flex items-center gap-4 rounded-lg bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
