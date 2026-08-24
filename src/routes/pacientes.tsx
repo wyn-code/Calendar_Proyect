@@ -20,6 +20,7 @@ import { FacturaUploadFlow } from "@/components/facturas/FacturaUploadFlow";
 import { usePatients } from "@/hooks/use-patients";
 import { usePatientsSummary } from "@/hooks/use-patients-summary";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
+import { useAppointments } from "@/hooks/use-appointments";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pacientes")({
@@ -53,6 +54,7 @@ function PacientesPage() {
   const { data: pacientes = [], isLoading } = usePatients();
   const { data: summary = [] } = usePatientsSummary();
   const { data: obrasSociales = [] } = useObraSociales();
+  const { data: appointments = [] } = useAppointments();
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]>("Todos");
   const [facturaPara, setFacturaPara] = useState<string | null>(null);
@@ -68,6 +70,24 @@ function PacientesPage() {
     for (const os of obrasSociales) m.set(os.id, os.nombre);
     return m;
   }, [obrasSociales]);
+
+  const tipoConsultaMap = useMemo(() => {
+    const m = new Map<number, string>();
+    const sorted = [...appointments].sort(
+      (a, b) => b.fecha.localeCompare(a.fecha) || b.hora_inicio.localeCompare(a.hora_inicio),
+    );
+    for (const a of sorted) {
+      if (!m.has(a.patient_id)) {
+        const isObraSocial =
+          a.tipo_consulta.trim().toLowerCase() === "obra social" && a.obra_social_id != null;
+        m.set(
+          a.patient_id,
+          isObraSocial ? (obraSocialMap.get(a.obra_social_id) ?? "Obra Social") : "Particular",
+        );
+      }
+    }
+    return m;
+  }, [appointments, obraSocialMap]);
 
   const visibles = useMemo(
     () =>
@@ -121,17 +141,15 @@ function PacientesPage() {
             <div className="space-y-3 md:hidden">
               {visibles.map((p) => {
                 const s = summaryMap.get(p.id);
-                const osName = p.obra_social_id
-                  ? (obraSocialMap.get(p.obra_social_id) ?? "Obra Social")
-                  : null;
+                const tipoConsulta = tipoConsultaMap.get(p.id) ?? "Particular";
                 return (
                   <div key={p.id} className="rounded-lg bg-card/90 p-3 shadow-sm backdrop-blur-sm">
                     <h2 className="text-sm font-bold">{p.nombre_completo}</h2>
                     <dl className="mt-2 grid grid-cols-2 gap-y-1 text-xs text-muted-foreground">
                       <dt>Consultorio</dt>
                       <dd className="text-right text-foreground">{p.consultorio}</dd>
-                      <dt>Cobertura</dt>
-                      <dd className="text-right text-foreground">{osName ?? "Particular"}</dd>
+                      <dt>Tipo de Consulta</dt>
+                      <dd className="text-right text-foreground">{tipoConsulta}</dd>
                       <dt>Sesiones este mes</dt>
                       <dd className="text-right text-foreground">{s?.sesiones_mes ?? 0}</dd>
                       <dt>Última factura</dt>
@@ -168,7 +186,7 @@ function PacientesPage() {
                   <TableRow>
                     <TableHead>Nombre y apellido</TableHead>
                     <TableHead>Consultorio</TableHead>
-                    <TableHead>Obra Social</TableHead>
+                    <TableHead>Tipo de Consulta</TableHead>
                     <TableHead className="text-center">Sesiones este mes</TableHead>
                     <TableHead>Última factura</TableHead>
                     <TableHead className="text-right">Acción</TableHead>
@@ -177,14 +195,12 @@ function PacientesPage() {
                 <TableBody>
                   {visibles.map((p) => {
                     const s = summaryMap.get(p.id);
-                    const osName = p.obra_social_id
-                      ? (obraSocialMap.get(p.obra_social_id) ?? "Obra Social")
-                      : null;
+                    const tipoConsulta = tipoConsultaMap.get(p.id) ?? "Particular";
                     return (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.nombre_completo}</TableCell>
                         <TableCell>{p.consultorio}</TableCell>
-                        <TableCell>{osName ?? "Particular"}</TableCell>
+                        <TableCell>{tipoConsulta}</TableCell>
                         <TableCell className="text-center">{s?.sesiones_mes ?? 0}</TableCell>
                         <TableCell
                           className={cn(!s?.ultima_factura && "text-muted-foreground italic")}

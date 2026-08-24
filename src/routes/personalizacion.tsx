@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, ImagePlus, RotateCcw } from "lucide-react";
+import { Check, ImagePlus, Loader2, RotateCcw } from "lucide-react";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { ConsultorioFilter } from "@/components/layout/ConsultorioFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import fondoFloral from "@/assets/fondo-floral.jpg";
+import { useCloudinaryConfig, useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { COLORES_MOCK } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -82,10 +82,18 @@ function contraste(hex: string): string {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#1c1418" : "#ffffff";
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 function PersonalizacionPage() {
   const [tema, setTema] = useState<TemaState>(loadTema);
   const [borrador, setBorrador] = useState<TemaState>(tema);
+  const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const { data: cloudConfig } = useCloudinaryConfig();
+  const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -99,18 +107,77 @@ function PersonalizacionPage() {
     };
   }, [tema.primary]);
 
+  useEffect(() => {
+    if (settings?.background_url) {
+      const fromBackend: TemaState = {
+        primary: settings.primary_color || tema.primary,
+        fondoId: "custom",
+        fondoCss: `url(${settings.background_url})`,
+      };
+      setTema(fromBackend);
+      setBorrador(fromBackend);
+      saveTema(fromBackend);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.background_url, settings?.primary_color]);
+
   const fondoPreview = (css: string) => css || `url(${fondoFloral})`;
 
-  const elegirArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const elegirArchivo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setBorrador((prev) => ({ ...prev, fondoId: "custom", fondoCss: `url(${url})` }));
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert("Formato no soportado. Usá JPG, PNG o WebP.");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      alert("La imagen supera los 5 MB. Elegí una más chica.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setBorrador((prev) => ({ ...prev, fondoId: "custom", fondoCss: `url(${previewUrl})` }));
+
+    if (!cloudConfig?.cloud_name || !cloudConfig?.upload_preset) {
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", cloudConfig.upload_preset);
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_/${cloudConfig.cloud_name}/image/upload`,
+        { method: "POST", body: formData },
+      );
+      if (!res.ok) throw new Error("Error al subir la imagen");
+
+      const data = (await res.json()) as { secure_url: string };
+      setBorrador((prev) => ({ ...prev, fondoId: "custom", fondoCss: `url(${data.secure_url})` }));
+    } catch (err) {
+      console.error("Cloudinary upload error:", err);
+      alert("No se pudo subir la imagen. Intentá de nuevo.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const aplicar = () => {
     setTema(borrador);
     saveTema(borrador);
+
+    const cssValue = borrador.fondoCss;
+    const urlMatch = cssValue.match(/url\(["']?(https?:\/\/[^"')]+)["']?\)/);
+    const backgroundUrl = urlMatch ? urlMatch[1] : null;
+
+    updateSettings.mutate({
+      background_url: borrador.fondoId === "custom" ? backgroundUrl : null,
+      primary_color: borrador.primary,
+    });
   };
 
   const reset = () => {
@@ -123,7 +190,6 @@ function PersonalizacionPage() {
     <PageShell>
       <div className="mx-auto w-full max-w-3xl space-y-4 pb-10">
         <PageHeader title="Personalizacion" subtitle="Color y fondo de la app" />
-        <ConsultorioFilter />
 
         <section className="rounded-lg bg-card/90 p-4 shadow-sm backdrop-blur-sm">
           <h2 className="text-base font-bold">Color principal</h2>
@@ -190,8 +256,14 @@ function PersonalizacionPage() {
             variant="outline"
             className="mt-3 min-h-11 w-full sm:w-auto"
             onClick={() => fileRef.current?.click()}
+            disabled={uploading}
           >
-            <ImagePlus className="size-4" /> Subir imagen
+            {uploading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ImagePlus className="size-4" />
+            )}{" "}
+            {uploading ? "Subiendo..." : "Subir imagen"}
           </Button>
           <input
             ref={fileRef}
