@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, ImagePlus, RotateCcw } from "lucide-react";
+import { Check, ImagePlus, Loader2, RotateCcw } from "lucide-react";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { ConsultorioFilter } from "@/components/layout/ConsultorioFilter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import fondoFloral from "@/assets/fondo-floral.jpg";
+import { useCloudinaryConfig, useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { COLORES_MOCK } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +67,10 @@ function saveTema(tema: TemaState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tema));
 }
 
-function contraste(hex: string): string {
+function applyPrimaryColor(hex: string) {
+  const root = document.documentElement;
+  root.style.setProperty("--primary", hex);
+  root.style.setProperty("--ring", hex);
   const h = hex.replace("#", "");
   const full =
     h.length === 3
@@ -79,51 +82,117 @@ function contraste(hex: string): string {
   const r = parseInt(full.slice(0, 2), 16) || 0;
   const g = parseInt(full.slice(2, 4), 16) || 0;
   const b = parseInt(full.slice(4, 6), 16) || 0;
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#1c1418" : "#ffffff";
+  const fg = (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#1c1418" : "#ffffff";
+  root.style.setProperty("--primary-foreground", fg);
 }
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function PersonalizacionPage() {
   const [tema, setTema] = useState<TemaState>(loadTema);
-  const [borrador, setBorrador] = useState<TemaState>(tema);
+  const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const { data: cloudConfig } = useCloudinaryConfig();
+  const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
+
   useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty("--primary", tema.primary);
-    root.style.setProperty("--primary-foreground", contraste(tema.primary));
-    root.style.setProperty("--ring", tema.primary);
-    return () => {
-      root.style.removeProperty("--primary");
-      root.style.removeProperty("--primary-foreground");
-      root.style.removeProperty("--ring");
-    };
+    applyPrimaryColor(tema.primary);
   }, [tema.primary]);
+
+  useEffect(() => {
+    if (settings?.background_url) {
+      const fromBackend: TemaState = {
+        primary: settings.primary_color || tema.primary,
+        fondoId: "custom",
+        fondoCss: `url(${settings.background_url})`,
+      };
+      setTema(fromBackend);
+      saveTema(fromBackend);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.background_url, settings?.primary_color]);
+
+  const updateTema = (patch: Partial<TemaState>) => {
+    setTema((prev) => {
+      const next = { ...prev, ...patch };
+      saveTema(next);
+
+      const cssValue = next.fondoCss;
+      const urlMatch = cssValue.match(/url\(["']?(https?:\/\/[^"')]+)["']?\)/);
+      const backgroundUrl = urlMatch ? urlMatch[1] : null;
+
+      updateSettings.mutate({
+        background_url: next.fondoId === "custom" ? backgroundUrl : null,
+        primary_color: next.primary,
+      });
+
+      return next;
+    });
+  };
 
   const fondoPreview = (css: string) => css || `url(${fondoFloral})`;
 
-  const elegirArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const elegirArchivo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setBorrador((prev) => ({ ...prev, fondoId: "custom", fondoCss: `url(${url})` }));
-  };
 
-  const aplicar = () => {
-    setTema(borrador);
-    saveTema(borrador);
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert("Formato no soportado. Usá JPG, PNG o WebP.");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      alert("La imagen supera los 5 MB. Elegí una más chica.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    updateTema({ fondoId: "custom", fondoCss: `url(${previewUrl})` });
+
+    if (!cloudConfig?.cloud_name || !cloudConfig?.upload_preset) {
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", cloudConfig.upload_preset);
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_/${cloudConfig.cloud_name}/image/upload`,
+        { method: "POST", body: formData },
+      );
+      if (!res.ok) throw new Error("Error al subir la imagen");
+
+      const data = (await res.json()) as { secure_url: string };
+      updateTema({ fondoId: "custom", fondoCss: `url(${data.secure_url})` });
+    } catch (err) {
+      console.error("Cloudinary upload error:", err);
+      alert("No se pudo subir la imagen. Intentá de nuevo.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const reset = () => {
-    setBorrador(TEMA_DEFAULT);
     setTema(TEMA_DEFAULT);
     saveTema(TEMA_DEFAULT);
+    applyPrimaryColor(TEMA_DEFAULT.primary);
+
+    updateSettings.mutate({
+      background_url: null,
+      primary_color: TEMA_DEFAULT.primary,
+    });
   };
 
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-3xl space-y-4 pb-10">
         <PageHeader title="Personalizacion" subtitle="Color y fondo de la app" />
-        <ConsultorioFilter />
 
         <section className="rounded-lg bg-card/90 p-4 shadow-sm backdrop-blur-sm">
           <h2 className="text-base font-bold">Color principal</h2>
@@ -133,17 +202,17 @@ function PersonalizacionPage() {
                 key={c.id}
                 type="button"
                 aria-label={c.label}
-                onClick={() => setBorrador((prev) => ({ ...prev, primary: c.hex }))}
+                onClick={() => updateTema({ primary: c.hex })}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-1 rounded-md border p-2 transition-colors",
-                  borrador.primary === c.hex ? "border-foreground" : "border-border",
+                  tema.primary === c.hex ? "border-foreground" : "border-border",
                 )}
               >
                 <span
                   className="flex size-6 items-center justify-center rounded-full"
                   style={{ backgroundColor: c.hex }}
                 >
-                  {borrador.primary === c.hex && <Check className="size-3.5 text-white" />}
+                  {tema.primary === c.hex && <Check className="size-3.5 text-white" />}
                 </span>
                 <span className="text-[11px]">{c.label}</span>
               </button>
@@ -156,11 +225,11 @@ function PersonalizacionPage() {
             <input
               id="color-libre"
               type="color"
-              value={borrador.primary}
-              onChange={(e) => setBorrador((prev) => ({ ...prev, primary: e.target.value }))}
+              value={tema.primary}
+              onChange={(e) => updateTema({ primary: e.target.value })}
               className="h-11 w-16 cursor-pointer rounded-md border bg-transparent p-1"
             />
-            <span className="text-xs text-muted-foreground uppercase">{borrador.primary}</span>
+            <span className="text-xs text-muted-foreground uppercase">{tema.primary}</span>
           </div>
         </section>
 
@@ -172,10 +241,10 @@ function PersonalizacionPage() {
                 key={f.id}
                 type="button"
                 aria-label={f.label}
-                onClick={() => setBorrador((prev) => ({ ...prev, fondoId: f.id, fondoCss: f.css }))}
+                onClick={() => updateTema({ fondoId: f.id, fondoCss: f.css })}
                 className={cn(
                   "min-h-11 overflow-hidden rounded-md border-2 transition-colors",
-                  borrador.fondoId === f.id ? "border-foreground" : "border-border",
+                  tema.fondoId === f.id ? "border-foreground" : "border-border",
                 )}
               >
                 <span
@@ -190,8 +259,14 @@ function PersonalizacionPage() {
             variant="outline"
             className="mt-3 min-h-11 w-full sm:w-auto"
             onClick={() => fileRef.current?.click()}
+            disabled={uploading}
           >
-            <ImagePlus className="size-4" /> Subir imagen
+            {uploading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ImagePlus className="size-4" />
+            )}{" "}
+            {uploading ? "Subiendo..." : "Subir imagen"}
           </Button>
           <input
             ref={fileRef}
@@ -206,23 +281,23 @@ function PersonalizacionPage() {
           <h2 className="text-base font-bold">Vista previa</h2>
           <div
             className="mt-3 rounded-lg border bg-cover bg-center p-3"
-            style={{ backgroundImage: fondoPreview(borrador.fondoCss) }}
+            style={{ backgroundImage: fondoPreview(tema.fondoCss) }}
           >
             <div className="rounded-md bg-white/90 p-3 shadow-sm">
-              <p className="text-sm font-bold" style={{ color: borrador.primary }}>
+              <p className="text-sm font-bold" style={{ color: tema.primary }}>
                 Agosto 2026
               </p>
               <p className="mt-1 text-xs text-neutral-600">10:00 - Camila Rossi</p>
               <div className="mt-3 flex items-center gap-2">
                 <span
                   className="rounded-md px-3 py-2 text-xs font-semibold text-white"
-                  style={{ backgroundColor: borrador.primary }}
+                  style={{ backgroundColor: tema.primary }}
                 >
                   Nuevo turno
                 </span>
                 <span
                   className="rounded-md border px-3 py-2 text-xs font-semibold"
-                  style={{ borderColor: borrador.primary, color: borrador.primary }}
+                  style={{ borderColor: tema.primary, color: tema.primary }}
                 >
                   Ver dia
                 </span>
@@ -231,14 +306,8 @@ function PersonalizacionPage() {
           </div>
         </section>
 
-        <div
-          className="sticky bottom-0 flex flex-col gap-2 rounded-lg bg-card/95 p-3 shadow-sm backdrop-blur-sm sm:flex-row"
-          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
-        >
-          <Button className="min-h-11 flex-1" onClick={aplicar}>
-            Aplicar cambios
-          </Button>
-          <Button variant="outline" className="min-h-11 flex-1" onClick={reset}>
+        <div className="flex">
+          <Button variant="outline" className="min-h-11" onClick={reset}>
             <RotateCcw className="size-4" /> Restablecer valores por defecto
           </Button>
         </div>

@@ -25,6 +25,7 @@ export function TurnoCard({ turno, onClick }: { turno: Turno; onClick?: () => vo
       <CoberturaBadge
         tipo={turno.tipo}
         label={cobertura}
+        esDiscapacidad={turno.esDiscapacidad}
         className="max-w-[7rem] shrink-0 truncate text-[10px]"
       />
     </button>

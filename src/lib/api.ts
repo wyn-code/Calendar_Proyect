@@ -40,6 +40,7 @@ export interface Appointment {
   hora_inicio: string;
   tipo_consulta: string;
   observaciones: string | null;
+  es_discapacidad: boolean;
 }
 
 export interface AppointmentCreate {
@@ -49,6 +50,7 @@ export interface AppointmentCreate {
   hora_inicio: string;
   tipo_consulta: string;
   observaciones: string | null;
+  es_discapacidad?: boolean;
 }
 
 function authToken(): string | null {

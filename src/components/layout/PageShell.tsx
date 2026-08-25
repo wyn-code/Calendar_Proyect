@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import fondoFloral from "@/assets/fondo-floral.jpg";
+import { useSettings } from "@/hooks/use-settings";
 
 const STORAGE_KEY = "calendar-pro-tema";
 
@@ -18,12 +19,30 @@ function getBackground(): string {
 
 export function PageShell({ children }: { children: ReactNode }) {
   const [bg, setBg] = useState(getBackground);
+  const { data: settings } = useSettings();
 
   useEffect(() => {
     const handler = () => setBg(getBackground());
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
   }, []);
+
+  useEffect(() => {
+    if (settings?.background_url) {
+      const css = `url(${settings.background_url})`;
+      setBg(css);
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const tema = raw ? JSON.parse(raw) : {};
+        tema.fondoCss = css;
+        tema.fondoId = "custom";
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tema));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [settings?.background_url]);
 
   const backgroundImage = bg || `url(${fondoFloral})`;
 

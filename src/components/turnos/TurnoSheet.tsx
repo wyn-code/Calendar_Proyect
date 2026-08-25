@@ -39,6 +39,7 @@ export function TurnoSheet({ turno, onClose, onEdit, onDelete }: Props) {
                       ? "Particular"
                       : turno.obraSocial?.trim() || "Obra Social"
                   }
+                  esDiscapacidad={turno.esDiscapacidad}
                   className="ml-auto text-[10px]"
                 />
               </div>

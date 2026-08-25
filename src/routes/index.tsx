@@ -51,6 +51,7 @@ function Index() {
   const [detalleFecha, setDetalleFecha] = useState<string | null>(null);
   const [editingTurno, setEditingTurno] = useState<Turno | null>(null);
   const [exportingPlanilla, setExportingPlanilla] = useState(false);
+  const [collapsedWeeks, setCollapsedWeeks] = useState<Set<number>>(new Set());
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -104,6 +105,7 @@ function Index() {
     consultorio?: Consultorio | null;
     tipo: TipoConsulta;
     obraSocial?: string;
+    esDiscapacidad?: boolean;
     observacion?: string;
   }) => {
     try {
@@ -157,6 +159,7 @@ function Index() {
         hora_inicio: data.hora,
         tipo_consulta: data.tipo === "obra_social" ? "Obra Social" : "Particular",
         observaciones: data.observacion?.trim() ? data.observacion.trim() : null,
+        es_discapacidad: data.esDiscapacidad ?? false,
       };
 
       if (data.id != null) {
@@ -272,6 +275,18 @@ function Index() {
     }
   };
 
+  const toggleWeek = (weekIndex: number) => {
+    setCollapsedWeeks((prev) => {
+      const next = new Set(prev);
+      if (next.has(weekIndex)) {
+        next.delete(weekIndex);
+      } else {
+        next.add(weekIndex);
+      }
+      return next;
+    });
+  };
+
   const detalleTurnos = detalleFecha ? (turnosPorDia[detalleFecha] ?? []) : [];
 
   return (
@@ -345,6 +360,8 @@ function Index() {
             year={year}
             month={month}
             turnosPorDia={turnosPorDia}
+            collapsedWeeks={collapsedWeeks}
+            onToggleWeek={toggleWeek}
             onDayClick={(key) => setFormFecha(key)}
             onTurnosClick={(key) => setDetalleFecha(key)}
           />

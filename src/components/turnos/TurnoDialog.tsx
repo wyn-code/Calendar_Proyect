@@ -33,6 +33,7 @@ interface Props {
     consultorio?: Consultorio | null;
     tipo: TipoConsulta;
     obraSocial?: string;
+    esDiscapacidad?: boolean;
     observacion?: string;
   }) => void;
 }
@@ -48,6 +49,7 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
   const [consultorio, setConsultorio] = useState<Consultorio | null>(null);
   const [tipo, setTipo] = useState<TipoConsulta>("particular");
   const [obraSocial, setObraSocial] = useState("");
+  const [esDiscapacidad, setEsDiscapacidad] = useState(false);
   const [observacion, setObservacion] = useState("");
   const [mostrarErrores, setMostrarErrores] = useState(false);
   const [confirmarMovimiento, setConfirmarMovimiento] = useState(false);
@@ -72,6 +74,7 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
     if (paciente) setConsultorio(paciente.consultorio);
     setTipo(turno.tipo);
     setObraSocial(turno.obraSocial ?? "");
+    setEsDiscapacidad(turno.esDiscapacidad ?? false);
     setObservacion(turno.observacion ?? "");
   }, [turno, patients]);
 
@@ -82,6 +85,7 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
     setConsultorio(null);
     setTipo("particular");
     setObraSocial("");
+    setEsDiscapacidad(false);
     setObservacion("");
     setMostrarErrores(false);
     setConfirmarMovimiento(false);
@@ -152,6 +156,7 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
       consultorio,
       tipo,
       ...(esObraSocial ? { obraSocial } : {}),
+      ...(esObraSocial && esDiscapacidad ? { esDiscapacidad: true } : {}),
       ...(observacion.trim() ? { observacion: observacion.trim() } : {}),
     });
     reset();
@@ -310,6 +315,19 @@ export function TurnoDialog({ fecha, turno = null, onClose, onSave }: Props) {
               {mostrarError("obraSocial") && (
                 <p className="text-xs text-destructive">{errores.obraSocial}</p>
               )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="es-discapacidad"
+                  type="checkbox"
+                  checked={esDiscapacidad}
+                  onChange={(e) => setEsDiscapacidad(e.target.checked)}
+                  className="size-4 rounded border-border accent-primary"
+                />
+                <Label htmlFor="es-discapacidad" className="cursor-pointer text-sm font-medium">
+                  Consulta por discapacidad
+                </Label>
+              </div>
             </div>
           )}
 

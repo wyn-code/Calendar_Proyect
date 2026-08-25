@@ -1,12 +1,22 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, Upload } from "lucide-react";
+import { Pencil, Search, Trash2, Upload } from "lucide-react";
 
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConsultorioFilter } from "@/components/layout/ConsultorioFilter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -17,10 +27,14 @@ import {
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FacturaUploadFlow } from "@/components/facturas/FacturaUploadFlow";
-import { usePatients } from "@/hooks/use-patients";
+import { PatientEditDialog } from "@/components/pacientes/PatientEditDialog";
+import { usePatients, useDeletePatient, useUpdatePatient } from "@/hooks/use-patients";
 import { usePatientsSummary } from "@/hooks/use-patients-summary";
 import { useObraSociales } from "@/hooks/use-obra-sociales";
+import { useAppointments } from "@/hooks/use-appointments";
+import { useConsultorioFiltro } from "@/lib/consultorio-filter";
 import { cn } from "@/lib/utils";
+import type { Patient, PatientUpdate } from "@/lib/api";
 
 export const Route = createFileRoute("/pacientes")({
   head: () => ({
@@ -53,9 +67,16 @@ function PacientesPage() {
   const { data: pacientes = [], isLoading } = usePatients();
   const { data: summary = [] } = usePatientsSummary();
   const { data: obrasSociales = [] } = useObraSociales();
+  const { data: appointments = [] } = useAppointments();
+  const { filtroConsultorio } = useConsultorioFiltro();
+  const deletePatient = useDeletePatient();
+  const updatePatient = useUpdatePatient();
+
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]>("Todos");
   const [facturaPara, setFacturaPara] = useState<string | null>(null);
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [aEliminar, setAEliminar] = useState<Patient | null>(null);
 
   const summaryMap = useMemo(() => {
     const m = new Map<number, { sesiones_mes: number; ultima_factura: string | null }>();
@@ -69,16 +90,56 @@ function PacientesPage() {
     return m;
   }, [obrasSociales]);
 
+  const tipoConsultaMap = useMemo(() => {
+    const m = new Map<number, string>();
+    const sorted = [...appointments].sort(
+      (a, b) => b.fecha.localeCompare(a.fecha) || b.hora_inicio.localeCompare(a.hora_inicio),
+    );
+    for (const a of sorted) {
+      if (!m.has(a.patient_id)) {
+        const isObraSocial =
+          a.tipo_consulta.trim().toLowerCase() === "obra social" && a.obra_social_id != null;
+        m.set(
+          a.patient_id,
+          isObraSocial ? (obraSocialMap.get(a.obra_social_id) ?? "Obra Social") : "Particular",
+        );
+      }
+    }
+    return m;
+  }, [appointments, obraSocialMap]);
+
   const visibles = useMemo(
     () =>
       pacientes.filter((p) => {
         const matchesSearch = p.nombre_completo.toLowerCase().includes(q.trim().toLowerCase());
         const cobertura = p.obra_social_id ? "Obra Social" : "Particular";
         const matchesFilter = filtro === "Todos" || cobertura === filtro;
-        return matchesSearch && matchesFilter;
+        const matchesConsultorio =
+          filtroConsultorio === "Todos" || p.consultorio === filtroConsultorio;
+        return matchesSearch && matchesFilter && matchesConsultorio;
       }),
-    [pacientes, q, filtro],
+    [pacientes, q, filtro, filtroConsultorio],
   );
+
+  const handleDelete = async () => {
+    if (!aEliminar) return;
+    try {
+      await deletePatient.mutateAsync(aEliminar.id);
+      setAEliminar(null);
+    } catch {
+      // error handled by mutation
+    }
+  };
+
+  const handleEditSave = async (data: PatientUpdate) => {
+    if (!editingPatient) return;
+    try {
+      await updatePatient.mutateAsync({ id: editingPatient.id, data });
+      setEditingPatient(null);
+    } catch {
+      // error handled by mutation
+    }
+  };
 
   return (
     <PageShell>
@@ -121,17 +182,15 @@ function PacientesPage() {
             <div className="space-y-3 md:hidden">
               {visibles.map((p) => {
                 const s = summaryMap.get(p.id);
-                const osName = p.obra_social_id
-                  ? (obraSocialMap.get(p.obra_social_id) ?? "Obra Social")
-                  : null;
+                const tipoConsulta = tipoConsultaMap.get(p.id) ?? "Particular";
                 return (
                   <div key={p.id} className="rounded-lg bg-card/90 p-3 shadow-sm backdrop-blur-sm">
                     <h2 className="text-sm font-bold">{p.nombre_completo}</h2>
                     <dl className="mt-2 grid grid-cols-2 gap-y-1 text-xs text-muted-foreground">
                       <dt>Consultorio</dt>
                       <dd className="text-right text-foreground">{p.consultorio}</dd>
-                      <dt>Cobertura</dt>
-                      <dd className="text-right text-foreground">{osName ?? "Particular"}</dd>
+                      <dt>Tipo de Consulta</dt>
+                      <dd className="text-right text-foreground">{tipoConsulta}</dd>
                       <dt>Sesiones este mes</dt>
                       <dd className="text-right text-foreground">{s?.sesiones_mes ?? 0}</dd>
                       <dt>Última factura</dt>
@@ -144,13 +203,32 @@ function PacientesPage() {
                         {formatFechaCorta(s?.ultima_factura ?? null)}
                       </dd>
                     </dl>
-                    <Button
-                      className="mt-3 min-h-11 w-full"
-                      size="sm"
-                      onClick={() => setFacturaPara(p.nombre_completo)}
-                    >
-                      <Upload className="size-4" /> Subir factura
-                    </Button>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        className="min-h-11 flex-1"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingPatient(p)}
+                      >
+                        <Pencil className="size-4" /> Editar
+                      </Button>
+                      <Button
+                        className="min-h-11 flex-1"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setFacturaPara(p.nombre_completo)}
+                      >
+                        <Upload className="size-4" /> Factura
+                      </Button>
+                      <Button
+                        className="min-h-11"
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setAEliminar(p)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -168,7 +246,7 @@ function PacientesPage() {
                   <TableRow>
                     <TableHead>Nombre y apellido</TableHead>
                     <TableHead>Consultorio</TableHead>
-                    <TableHead>Obra Social</TableHead>
+                    <TableHead>Tipo de Consulta</TableHead>
                     <TableHead className="text-center">Sesiones este mes</TableHead>
                     <TableHead>Última factura</TableHead>
                     <TableHead className="text-right">Acción</TableHead>
@@ -177,27 +255,44 @@ function PacientesPage() {
                 <TableBody>
                   {visibles.map((p) => {
                     const s = summaryMap.get(p.id);
-                    const osName = p.obra_social_id
-                      ? (obraSocialMap.get(p.obra_social_id) ?? "Obra Social")
-                      : null;
+                    const tipoConsulta = tipoConsultaMap.get(p.id) ?? "Particular";
                     return (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.nombre_completo}</TableCell>
                         <TableCell>{p.consultorio}</TableCell>
-                        <TableCell>{osName ?? "Particular"}</TableCell>
+                        <TableCell>{tipoConsulta}</TableCell>
                         <TableCell className="text-center">{s?.sesiones_mes ?? 0}</TableCell>
                         <TableCell
                           className={cn(!s?.ultima_factura && "text-muted-foreground italic")}
                         >
                           {formatFechaCorta(s?.ultima_factura ?? null)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="flex justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-9"
+                            onClick={() => setEditingPatient(p)}
+                            aria-label={`Editar ${p.nombre_completo}`}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-9 text-destructive"
+                            onClick={() => setAEliminar(p)}
+                            aria-label={`Eliminar ${p.nombre_completo}`}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
+                            className="ml-1"
                             onClick={() => setFacturaPara(p.nombre_completo)}
                           >
-                            <Upload className="size-4" /> Subir factura
+                            <Upload className="size-4" /> Factura
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -233,6 +328,35 @@ function PacientesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <PatientEditDialog
+        patient={editingPatient}
+        obrasSociales={obrasSociales}
+        onClose={() => setEditingPatient(null)}
+        onSave={handleEditSave}
+      />
+
+      <AlertDialog open={aEliminar !== null} onOpenChange={(o) => !o && setAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar paciente</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que querés eliminar a <strong>{aEliminar?.nombre_completo}</strong>? Se
+              eliminarán también todos sus turnos asociados. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+              disabled={deletePatient.isPending}
+            >
+              {deletePatient.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }
