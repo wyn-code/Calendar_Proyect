@@ -11,6 +11,7 @@ function Chip({ turno, size }: { turno: Turno; size: "sm" | "lg" }) {
     <CoberturaBadge
       tipo={turno.tipo}
       label={etiqueta}
+      esDiscapacidad={turno.esDiscapacidad}
       className={cn(
         "shrink min-w-0",
         size === "sm"
@@ -44,6 +45,7 @@ export function TurnoLine({ turno, size = "sm" }: { turno: Turno; size?: "sm" | 
         <CoberturaBadge
           tipo={turno.tipo}
           label={cobertura}
+          esDiscapacidad={turno.esDiscapacidad}
           className="mt-0.5 w-fit max-w-full break-words whitespace-normal px-1 py-px text-[9px] leading-[1.2]"
         />
       </div>

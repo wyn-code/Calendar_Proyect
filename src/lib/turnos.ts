@@ -24,6 +24,7 @@ export interface Turno {
   nombre: string;
   tipo: TipoConsulta;
   obraSocial?: string;
+  esDiscapacidad?: boolean;
   observacion?: string;
 }
 
@@ -48,6 +49,7 @@ export function appointmentsToTurnos(
       nombre: patient?.nombre_completo ?? `Paciente #${a.patient_id}`,
       tipo: esObraSocial ? "obra_social" : "particular",
       ...(obraSocial ? { obraSocial: obraSocial.nombre } : {}),
+      ...(a.es_discapacidad ? { esDiscapacidad: true } : {}),
       ...(a.observaciones ? { observacion: a.observaciones } : {}),
     };
   });
